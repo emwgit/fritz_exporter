@@ -10,6 +10,7 @@ not have show data. Listens on 127.0.0.1 only.
 import copy
 import json
 import math
+import re
 import sys
 import threading
 import time
@@ -31,6 +32,7 @@ from tests.fc_services_mock import (
     fc_services_capabilities,
 )
 from tests.test_fritz_docsis import DOCSIS_RAW
+from tests.test_fritz_net_devices import NET_DEV_RAW
 from tests.test_fritz_rest_api import CONNECTIONS_RAW, SEGMENT_RAW
 from tests.web_replies import web_reply
 
@@ -225,19 +227,41 @@ def _mesh_topology() -> dict:
     }
 
 
+def _moving_speeds(text: str, seed: str) -> str:
+    return re.sub(
+        r"(\d+) / (\d+) Mbit/s",
+        lambda m: (
+            f"{_wobble(int(m[1]), seed + 'rx', 0.3):.0f} / "
+            f"{_wobble(int(m[2]), seed + 'tx', 0.3):.0f} Mbit/s"
+        ),
+        text,
+    )
+
+
+def _net_dev() -> dict:
+    raw: Any = copy.deepcopy(NET_DEV_RAW)
+    for device in raw["data"]["active"]:
+        for prop in device["properties"]:
+            prop["txt"] = _moving_speeds(prop["txt"], device["mac"])
+    return raw
+
+
+def _fiber() -> dict:
+    return {
+        "data": {
+            "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
+            "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
+        }
+    }
+
+
 def _webui() -> MagicMock:
     client = MagicMock()
     client.fetch_aha.side_effect = lambda *_a, **_k: _aha()
-    client.fetch_page.side_effect = lambda page: (
-        _docsis()
-        if page == "docInfo"
-        else {
-            "data": {
-                "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
-                "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
-            }
-        }
-    )
+    client.fetch_page.side_effect = lambda page, **_: {
+        "docInfo": _docsis,
+        "netDev": _net_dev,
+    }.get(page, _fiber)()
     client.fetch_api.side_effect = lambda path: _segment() if "segment" in path else CONNECTIONS_RAW
     return client
 
