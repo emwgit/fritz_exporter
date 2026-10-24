@@ -29,6 +29,7 @@ from fritzexporter.fritz_docsis import (
     UpstreamChannel,
     parse_docsis_response,
 )
+from fritzexporter.fritz_dsl import DSL_STAT_PAGE, parse_dsl_stat_response
 from fritzexporter.fritz_fiber import FIBER_STATS_PAGE, parse_fiber_stats_response
 from fritzexporter.fritz_rest_generic import (
     parse_connections_response,
@@ -686,6 +687,96 @@ class WanDSLInterfaceConfigAVM(FritzCapability):
         labels = [device.serial, device.friendly_name]
         self._add("fec", labels, self.issues.num(result, "NewFECErrors"))
         self._add("crc", labels, self.issues.num(result, "NewCRCErrors"))
+
+
+class WanDslLineStatistics(FritzCapability):
+    """DSL error counters and line data from the Fritz!Box web UI.
+
+    TR-064 has only the cumulative FEC and CRC error counts. The web UI page
+    ``data.lua?page=dslStat`` also gives errored seconds, and CRC errors and
+    corrected and uncorrected DTUs (G.INP retransmission units) per minute and
+    over the last 15 minutes, for both directions, and the line length, profile
+    and vectoring mode.
+    """
+
+    uses_webui = True
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.requirements.append(("WANDSLInterfaceConfig1", "GetInfo"))
+
+    def create_metrics(self) -> None:
+        for key, name, what in (
+            ("errored_seconds", "fritz_dsl_errored_seconds", "Errored seconds"),
+            ("severely_errored", "fritz_dsl_severely_errored_seconds", "Severely errored seconds"),
+        ):
+            self._gauge(
+                key,
+                name,
+                f"{what} of the DSL line as reported by the Fritz!Box, "
+                "which does not document the period they are counted over",
+                "direction",
+                unit="seconds",
+            )
+        for key, name, what in (
+            ("crc_errors", "fritz_dsl_crc_errors", "CRC errors"),
+            ("corrected_dtus", "fritz_dsl_corrected_dtus", "Corrected DTUs"),
+            ("uncorrected_dtus", "fritz_dsl_uncorrected_dtus", "Uncorrected DTUs"),
+        ):
+            self._gauge(
+                key,
+                name,
+                f"{what} of the DSL line, per minute (window=minute) "
+                "or over the last 15 minutes (window=15_minutes)",
+                "direction",
+                "window",
+            )
+        self._gauge(
+            "line_length",
+            "fritz_dsl_line_length_meters",
+            "Approximate DSL line length",
+            unit="meters",
+        )
+        self._gauge(
+            "line_info",
+            "fritz_dsl_line_info",
+            "DSL line information (always 1 if present)",
+            "profile",
+            "carrier_set",
+            "vectoring_rx",
+            "vectoring_tx",
+        )
+
+    def _generate_metric_values(self, device: FritzDevice) -> None:
+        statistics = parse_dsl_stat_response(
+            self._webui(device).fetch_page(DSL_STAT_PAGE), self.issues
+        )
+        labels = [device.serial, device.friendly_name]
+        errors = statistics["errors"]
+        for key, window, counter in (
+            ("errored_seconds", None, errors["errored_seconds"]),
+            ("severely_errored", None, errors["severely_errored_seconds"]),
+            ("crc_errors", "minute", errors["crc_errors_minute"]),
+            ("crc_errors", "15_minutes", errors["crc_errors_15_minutes"]),
+            ("corrected_dtus", "minute", errors["corrected_dtus_minute"]),
+            ("corrected_dtus", "15_minutes", errors["corrected_dtus_15_minutes"]),
+            ("uncorrected_dtus", "minute", errors["uncorrected_dtus_minute"]),
+            ("uncorrected_dtus", "15_minutes", errors["uncorrected_dtus_15_minutes"]),
+        ):
+            extra = [] if window is None else [window]
+            self._add(key, [*labels, "rx", *extra], counter["receive"])
+            self._add(key, [*labels, "tx", *extra], counter["transmit"])
+
+        line = statistics["line"]
+        self._add("line_length", labels, line["length_meters"])
+        info = (
+            line["profile"],
+            line["carrier_set"],
+            line["vectoring_receive"],
+            line["vectoring_transmit"],
+        )
+        if all(value is not None for value in info):
+            self._add("line_info", [*labels, *(str(value) for value in info)], 1)
 
 
 class WanFiberInterfaceConfig(FritzCapability):
