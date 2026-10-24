@@ -26,6 +26,7 @@ A quick orientation before diving in:
       fritz_aha.py          – Parser for the AHA (smart home) device list XML
       fritz_docsis.py       – Parser for the DOCSIS cable channel page (docInfo)
       fritz_fiber.py        – Parser for the fibre optical level page (fiberStats)
+      fritz_net_devices.py  – Parser for the WiFi link speeds of the network overview (netDev)
       fritz_rest_generic.py – Parsers for REST API connections and segment monitor
       exceptions.py         – Top-level exceptions
       config/
@@ -387,11 +388,11 @@ the scrape fail at once (``start_scrape()`` resets this).  A device that offers 
 the MD5 login, which is not allowed for it, gets no web interface requests until the
 exporter is restarted.
 
-**fritz_aha.py, fritz_docsis.py, fritz_fiber.py, fritz_rest_generic.py**
+**fritz_aha.py, fritz_docsis.py, fritz_fiber.py, fritz_net_devices.py, fritz_rest_generic.py**
 
 Parsers for the web interface replies: the AHA device list (XML, via ``defusedxml``),
-the DOCSIS channel page, the fibre optical level history and the REST API connection
-and segment monitor endpoints.  Each turns a raw reply into typed data through
+the DOCSIS channel page, the fibre optical level history, the WiFi link speeds of the
+network overview and the REST API connection and segment monitor endpoints.  Each turns a raw reply into typed data through
 ``reply.py`` and takes an ``Issues`` collector, so a defective value or item is
 skipped and recorded instead of failing the whole capability.
 
