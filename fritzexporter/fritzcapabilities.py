@@ -1031,14 +1031,33 @@ class WanCommonInterfaceDataPackets(_WanTotals):
         )
 
 
-# WLANConfiguration1..4: what the bands are on Fritz!Boxes.
+# WLANConfiguration1..4 on a dual-band box (the fourth only exists on a tri-band one).
 WIFI_NAMES: tuple[str, ...] = ("2.4GHz", "5GHz", "Guest", "WLAN4")
+# On a tri-band box the third is the 6 GHz radio and the fourth the guest network.
+WIFI_NAMES_TRI_BAND: tuple[str, ...] = ("2.4GHz", "5GHz", "6GHz", "Guest")
+SIX_GHZ_BAND = "6000"
+
+
+def wifi_names_of(device: FritzDevice) -> tuple[str, ...]:
+    """The names of WLANConfiguration1..4, by the band the box reports for the third."""
+    if "WLANConfiguration3" not in device.fc.services:
+        return WIFI_NAMES
+    try:
+        info = read_action(device, "WLANConfiguration3", "GetInfo")
+    except TRANSPORT_ERRORS:
+        raise
+    except FritzConnectionException:
+        return WIFI_NAMES
+    if info.opt_text("NewX_AVM-DE_FrequencyBand") == SIX_GHZ_BAND:
+        return WIFI_NAMES_TRI_BAND
+    return WIFI_NAMES
 
 
 class WlanConfigurationInfo(FritzCapability):
     def __init__(self) -> None:
         super().__init__()
         self.wifi_present: list[bool] = [False] * len(WIFI_NAMES)
+        self.wifi_names = WIFI_NAMES
 
     def check_capability(self, device: FritzDevice) -> None:
         for index in range(len(WIFI_NAMES)):
@@ -1060,6 +1079,8 @@ class WlanConfigurationInfo(FritzCapability):
                 device.log_name,
             )
         self.present = any(self.wifi_present)
+        if self.present:
+            self.wifi_names = wifi_names_of(device)
 
     def create_metrics(self) -> None:
         # Keyed by the band. SSID, standard and the enabled flag change when the
@@ -1105,12 +1126,12 @@ class WlanConfigurationInfo(FritzCapability):
             )
             if wlan_present:
                 with self._item(f"WLAN {index + 1}"):
-                    self._collect_wlan(device, index)
+                    self._collect_wlan(device, index, device_wlan_cap.wifi_names[index])
 
-    def _collect_wlan(self, device: FritzDevice, index: int) -> None:
+    def _collect_wlan(self, device: FritzDevice, index: int, name: str) -> None:
         service = f"WLANConfiguration{index + 1}"
         info = read_action(device, service, "GetInfo")
-        labels = [device.serial, device.friendly_name, str(index + 1), WIFI_NAMES[index]]
+        labels = [device.serial, device.friendly_name, str(index + 1), name]
         self._add("wlanstatus", labels, self.issues.equals(info, "NewStatus", "Up"))
         self._add("wlanenabled", labels, self.issues.flag(info, "NewEnable"))
         self._add("wlanchannel", labels, self.issues.num(info, "NewChannel"))
@@ -1141,6 +1162,7 @@ class WlanAssociatedDevices(FritzCapability):
     def __init__(self) -> None:
         super().__init__()
         self.wifi_present: list[bool] = [False] * len(WIFI_NAMES)
+        self.wifi_names = WIFI_NAMES
 
     def enabled(self, device: FritzDevice) -> bool:
         return device.wifi_client_info
@@ -1159,6 +1181,8 @@ class WlanAssociatedDevices(FritzCapability):
                 and self._supported(device, [(service, "GetTotalAssociations")])
             )
         self.present = any(self.wifi_present)
+        if self.present:
+            self.wifi_names = wifi_names_of(device)
 
     def create_metrics(self) -> None:
         # Keyed by the client's MAC address: its band changes when it roams and
@@ -1191,9 +1215,9 @@ class WlanAssociatedDevices(FritzCapability):
             if not present:
                 continue
             with self._item(f"WLAN {index + 1} clients"):
-                self._collect_clients(device, index, seen)
+                self._collect_clients(device, index, device_cap.wifi_names[index], seen)
 
-    def _collect_clients(self, device: FritzDevice, index: int, seen: set[str]) -> None:
+    def _collect_clients(self, device: FritzDevice, index: int, name: str, seen: set[str]) -> None:
         service = f"WLANConfiguration{index + 1}"
         # The loop depends on the count: it is read strictly, and a defect skips
         # this WLAN.
@@ -1221,7 +1245,7 @@ class WlanAssociatedDevices(FritzCapability):
                 self._add("speed", labels, self.issues.num(info, "NewX_AVM-DE_Speed"))
                 # A client may not have an address yet.
                 address = info.text("NewAssociatedDeviceIPAddress", "")
-                self._add("info", [*labels, WIFI_NAMES[index], address], 1)
+                self._add("info", [*labels, name, address], 1)
 
 
 class _MeshLink(NamedTuple):
