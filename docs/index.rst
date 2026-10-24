@@ -26,7 +26,7 @@ This is a prometheus exporter for AVM Fritz! home network devices commonly found
 
 The exporter should work with Fritz!Box and Fritz!Repeater Devices (and maybe others). It actively checks for supported metrics and queries the metrics for all devices configured (Yes, it has multi-device support for all you Mesh users out there.)
 
-It has been tested against an AVM Fritz!Box 7590 (DSL), a Fritz!Box 5690 (fibre), a Fritz!Box 5530 Fiber, a Fritz!Box 6660 Cable (DOCSIS, FRITZ!OS 8.25), a Fritz!Repeater 2400 and a Fritz!WLAN Repeater 1750E. If you have another box and data is missing, please file an issue or PR on GitHub.
+It has been tested against an AVM Fritz!Box 7590 (DSL), a Fritz!Box 5690 (fibre), a Fritz!Box 5690 Pro (VDSL, FRITZ!OS 8.25), a Fritz!Box 5530 Fiber, a Fritz!Box 6660 Cable (DOCSIS, FRITZ!OS 8.25), a Fritz!Repeater 2400 and a Fritz!WLAN Repeater 1750E. If you have another box and data is missing, please file an issue or PR on GitHub.
 
 
 .. note::
@@ -59,7 +59,9 @@ The following groups of metrics are currently available:
 * Host table (number of known devices; with ``host_info`` enabled, activity and speed of each host by MAC address, and its address, name and connection in ``fritz_host_info``)
 * LAN statistics (Ethernet only)
 * WAN statistics (including the delegated IPv6 prefix)
-* DSL statistics
+* DSL statistics (with the web interface: errored seconds, CRC errors and corrected/uncorrected
+  DTUs per minute and over the last 15 minutes, line length, and the profile and vectoring mode
+  in ``fritz_dsl_line_info``)
 * Fibre / GPON statistics (optical levels, SFP/GPON identity, fibre counters)
 * PPP statistics
 * WiFi statistics per band, with SSID and standard in ``fritz_wifi_info`` (with ``wifi_client_info`` enabled, also signal strength and speed of each client, with band and address in ``fritz_wifi_client_info``)
