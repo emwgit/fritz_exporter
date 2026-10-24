@@ -558,6 +558,7 @@ class TestFritzCollector:
             "WanCommonInterfaceDataPackets",
             "WlanConfigurationInfo",
             "WlanAssociatedDevices",
+            "WlanClientLinkSpeeds",
             "MeshTopology",
             "HostInfo",
             "HomeAutomation",
