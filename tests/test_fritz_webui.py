@@ -495,6 +495,25 @@ class TestFritzWebUiClientFetch:
         assert posted_data["xhr"] == "1"
 
     @patch("fritzexporter.fritz_webui.requests.Session")
+    def test_fetch_page_sends_extra_fields_and_keeps_sid(
+        self, mock_session_cls: MagicMock
+    ):
+        session = mock_session_cls.return_value
+        session.get.return_value = _resp("<SessionInfo><SID>0123456789abcdef</SID></SessionInfo>")
+        session.post.return_value = _resp('{"pid":"chan","data":{}}')
+
+        client = FritzWebUiClient("fritz.box", "user", "pass")
+        client.fetch_page("chan", xhrId="environment", sid="other")
+
+        posted_data = session.post.call_args.kwargs["data"]
+        assert posted_data == {
+            "sid": "0123456789abcdef",
+            "page": "chan",
+            "xhrId": "environment",
+            "xhr": "1",
+        }
+
+    @patch("fritzexporter.fritz_webui.requests.Session")
     def test_fetch_raises_when_html_returned(self, mock_session_cls: MagicMock):
         session = mock_session_cls.return_value
 

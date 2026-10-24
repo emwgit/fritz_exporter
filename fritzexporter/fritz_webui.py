@@ -492,14 +492,16 @@ class FritzWebUiClient:
     # Endpoints
     # ------------------------------------------------------------------
 
-    def fetch_page(self, page: str) -> object:
+    def fetch_page(self, page: str, **params: str) -> object:
         """Fetch a ``data.lua`` page as JSON.
 
+        ``params`` are more form fields, or replace ``xhrId`` (default ``all``): some
+        pages answer only for their own ``xhrId``.
         The device answers an invalid or expired SID with its HTML login page.
         """
 
         def fetch(sid: str) -> object:
-            payload = {"sid": sid, "page": page, "xhrId": "all", "xhr": "1"}
+            payload = {"xhrId": "all", "xhr": "1", **params, "sid": sid, "page": page}
             reply = self._request("POST", "/data.lua", "data.lua request failed", data=payload)
             return self._json(reply, "data.lua")
 
