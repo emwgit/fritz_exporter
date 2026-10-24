@@ -35,6 +35,7 @@ from fritzexporter.fritz_rest_generic import (
     parse_connections_response,
     parse_monitor_segment,
 )
+from fritzexporter.fritz_wan_qos import WAN_QOS_PAGE, WAN_QOS_PARAMETERS, parse_wan_qos_response
 from fritzexporter.fritz_webui import FritzWebUiClient, FritzWebUiError
 from fritzexporter.fritz_wifi_environment import (
     WIFI_ENVIRONMENT_PAGE,
@@ -2095,6 +2096,54 @@ class WanSegmentUtilization(FritzCapability):
                 samples = series[direction]
                 if samples:
                     self._add("utilization", [*labels, direction, series["type"]], samples[-1])
+
+
+class WanQosThroughput(FritzCapability):
+    """WAN throughput per traffic class (QoS) from the web interface.
+
+    TR-064 has the throughput of the link as a whole. The online monitor page
+    ``data.lua?page=netMoni`` splits it by class: the priority of the upstream
+    traffic, and internet against multicast (IPTV) downstream.
+    """
+
+    uses_webui = True
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.requirements.append(("WANCommonInterfaceConfig1", "GetCommonLinkProperties"))
+
+    def create_metrics(self) -> None:
+        self._gauge(
+            "throughput",
+            "fritz_wan_qos_throughput_bps",
+            "Throughput of a traffic class in bit/s, mean of the last samples of the "
+            "online monitor (about 80 seconds)",
+            "link",
+            "direction",
+            "qos_class",
+            unit="bps",
+        )
+        self._gauge(
+            "guest",
+            "fritz_wan_guest_throughput_bps",
+            "Throughput of the guest network in bit/s, mean of the last samples of the online "
+            "monitor; the Fritz!Box does not document whether it is part of the QoS classes",
+            "link",
+            "direction",
+            unit="bps",
+        )
+
+    def _generate_metric_values(self, device: FritzDevice) -> None:
+        qos = parse_wan_qos_response(
+            self._webui(device).fetch_page(WAN_QOS_PAGE, **WAN_QOS_PARAMETERS), self.issues
+        )
+        serial_and_name = [device.serial, device.friendly_name]
+        for entry in qos["classes"]:
+            labels = [*serial_and_name, entry["link"], entry["direction"], entry["qos_class"]]
+            self._add("throughput", labels, entry["bits_per_second"])
+        for guest in qos["guests"]:
+            labels = [*serial_and_name, guest["link"], guest["direction"]]
+            self._add("guest", labels, guest["bits_per_second"])
 
 
 class WanConnectionStatus(FritzCapability):

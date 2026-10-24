@@ -565,6 +565,7 @@ class TestFritzCollector:
             "HomeAutomation",
             "WanDocsisCable",
             "WanSegmentUtilization",
+            "WanQosThroughput",
             "WanConnectionStatus",
             "ManagementServerInfo",
             "UspControllers",

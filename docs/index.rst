@@ -59,6 +59,10 @@ The following groups of metrics are currently available:
 * Host table (number of known devices; with ``host_info`` enabled, activity and speed of each host by MAC address, and its address, name and connection in ``fritz_host_info``)
 * LAN statistics (Ethernet only)
 * WAN statistics (including the delegated IPv6 prefix)
+* WAN throughput per QoS class (upstream realtime, important, default, background; downstream
+  internet and multicast), read from the online monitor of the web interface
+  (``fritz_wan_qos_throughput_bps``), and the throughput of the guest network
+  (``fritz_wan_guest_throughput_bps``)
 * DSL statistics (with the web interface: errored seconds, CRC errors and corrected/uncorrected
   DTUs per minute and over the last 15 minutes, line length, and the profile and vectoring mode
   in ``fritz_dsl_line_info``)

@@ -1112,6 +1112,220 @@
     },
     {
       "type": "timeseries",
+      "title": "Upload by QoS class",
+      "description": "The throughput of the classes realtime, important, default and background, from the online monitor of the web interface, the mean of the last 80 seconds. The line maximum is in the Maximum bit rate panel.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (qos_class) (fritz_wan_qos_throughput_bps{friendly_name=\"$device\",direction=\"tx\"})",
+          "refId": "A",
+          "legendFormat": "{{qos_class}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 40,
+            "gradientMode": "opacity",
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisSoftMin": 0,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "bps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 17,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 24
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Download by QoS class",
+      "description": "The throughput of the classes internet and multicast (IPTV), from the online monitor of the web interface, the mean of the last 80 seconds. The line maximum is in the Maximum bit rate panel.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "sum by (qos_class) (fritz_wan_qos_throughput_bps{friendly_name=\"$device\",direction=\"rx\"})",
+          "refId": "A",
+          "legendFormat": "{{qos_class}}"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 40,
+            "gradientMode": "opacity",
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisSoftMin": 0,
+            "stacking": {
+              "mode": "normal",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "bps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 18,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 24
+      }
+    },
+    {
+      "type": "timeseries",
+      "title": "Guest network throughput",
+      "description": "The guest network, from the online monitor. The Fritz!Box does not document whether it is part of the QoS classes, so it is not stacked with them.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${datasource}"
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "fritz_wan_guest_throughput_bps{friendly_name=\"$device\",direction=\"rx\"}",
+          "refId": "A",
+          "legendFormat": "download"
+        },
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "expr": "fritz_wan_guest_throughput_bps{friendly_name=\"$device\",direction=\"tx\"}",
+          "refId": "B",
+          "legendFormat": "upload"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "custom": {
+            "drawStyle": "line",
+            "lineWidth": 2,
+            "fillOpacity": 25,
+            "gradientMode": "opacity",
+            "showPoints": "never",
+            "spanNulls": true,
+            "axisSoftMin": null,
+            "stacking": {
+              "mode": "none",
+              "group": "A"
+            }
+          },
+          "color": {
+            "mode": "palette-classic"
+          },
+          "unit": "bps"
+        },
+        "overrides": [
+          {
+            "matcher": {
+              "id": "byRegexp",
+              "options": ".*(tx|[Uu]pload|[Uu]pstream).*"
+            },
+            "properties": [
+              {
+                "id": "custom.transform",
+                "value": "negative-Y"
+              }
+            ]
+          }
+        ]
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom",
+          "calcs": [
+            "lastNotNull",
+            "max"
+          ],
+          "showLegend": true
+        },
+        "tooltip": {
+          "mode": "multi",
+          "sort": "desc"
+        }
+      },
+      "id": 19,
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 32
+      }
+    },
+    {
+      "type": "timeseries",
       "title": "Packets",
       "description": "",
       "datasource": {
@@ -1177,12 +1391,12 @@
           "sort": "desc"
         }
       },
-      "id": 17,
+      "id": 20,
       "gridPos": {
         "h": 6,
         "w": 8,
-        "x": 0,
-        "y": 24
+        "x": 12,
+        "y": 32
       }
     },
     {
@@ -1251,12 +1465,12 @@
         "namePlacement": "auto",
         "sizing": "auto"
       },
-      "id": 18,
+      "id": 21,
       "gridPos": {
         "h": 6,
         "w": 8,
-        "x": 8,
-        "y": 24
+        "x": 0,
+        "y": 40
       }
     },
     {
@@ -1331,12 +1545,12 @@
         "orientation": "auto",
         "wideLayout": true
       },
-      "id": 19,
+      "id": 22,
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 16,
-        "y": 24
+        "x": 8,
+        "y": 40
       }
     },
     {
@@ -1411,12 +1625,12 @@
         "orientation": "auto",
         "wideLayout": true
       },
-      "id": 20,
+      "id": 23,
       "gridPos": {
         "h": 6,
         "w": 4,
-        "x": 20,
-        "y": 24
+        "x": 12,
+        "y": 40
       }
     },
     {
@@ -1476,12 +1690,12 @@
         "orientation": "auto",
         "wideLayout": true
       },
-      "id": 21,
+      "id": 24,
       "gridPos": {
         "h": 7,
         "w": 4,
-        "x": 0,
-        "y": 30
+        "x": 16,
+        "y": 40
       }
     },
     {
@@ -1640,12 +1854,12 @@
           }
         }
       ],
-      "id": 22,
+      "id": 25,
       "gridPos": {
         "h": 7,
         "w": 12,
-        "x": 4,
-        "y": 30
+        "x": 0,
+        "y": 47
       }
     },
     {
@@ -1707,12 +1921,12 @@
           }
         }
       ],
-      "id": 23,
+      "id": 26,
       "gridPos": {
         "h": 7,
         "w": 8,
-        "x": 16,
-        "y": 30
+        "x": 12,
+        "y": 47
       }
     },
     {
@@ -1768,24 +1982,24 @@
           "sort": "desc"
         }
       },
-      "id": 24,
+      "id": 27,
       "gridPos": {
         "h": 6,
         "w": 24,
         "x": 0,
-        "y": 37
+        "y": 54
       }
     },
     {
       "type": "row",
       "title": "DSL",
       "collapsed": true,
-      "id": 25,
+      "id": 28,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 43
+        "y": 60
       },
       "panels": [
         {
@@ -1860,12 +2074,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 26,
+          "id": 29,
           "gridPos": {
             "h": 4,
             "w": 3,
             "x": 0,
-            "y": 44
+            "y": 61
           }
         },
         {
@@ -1940,12 +2154,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 27,
+          "id": 30,
           "gridPos": {
             "h": 4,
             "w": 3,
             "x": 3,
-            "y": 44
+            "y": 61
           }
         },
         {
@@ -2007,12 +2221,12 @@
             "showThresholdLabels": false,
             "orientation": "auto"
           },
-          "id": 28,
+          "id": 31,
           "gridPos": {
             "h": 4,
             "w": 3,
             "x": 6,
-            "y": 44
+            "y": 61
           }
         },
         {
@@ -2074,12 +2288,12 @@
             "showThresholdLabels": false,
             "orientation": "auto"
           },
-          "id": 29,
+          "id": 32,
           "gridPos": {
             "h": 4,
             "w": 3,
             "x": 9,
-            "y": 44
+            "y": 61
           }
         },
         {
@@ -2138,12 +2352,12 @@
               "sort": "desc"
             }
           },
-          "id": 30,
+          "id": 33,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 44
+            "y": 61
           }
         },
         {
@@ -2199,12 +2413,12 @@
               "sort": "desc"
             }
           },
-          "id": 31,
+          "id": 34,
           "gridPos": {
             "h": 4,
             "w": 6,
             "x": 0,
-            "y": 52
+            "y": 69
           }
         },
         {
@@ -2260,12 +2474,12 @@
               "sort": "desc"
             }
           },
-          "id": 32,
+          "id": 35,
           "gridPos": {
             "h": 4,
             "w": 6,
             "x": 6,
-            "y": 52
+            "y": 69
           }
         },
         {
@@ -2322,12 +2536,12 @@
               "sort": "desc"
             }
           },
-          "id": 33,
+          "id": 36,
           "gridPos": {
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 52
+            "y": 69
           }
         },
         {
@@ -2384,12 +2598,12 @@
               "sort": "desc"
             }
           },
-          "id": 34,
+          "id": 37,
           "gridPos": {
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 57
+            "y": 74
           }
         },
         {
@@ -2454,12 +2668,12 @@
               "sort": "desc"
             }
           },
-          "id": 35,
+          "id": 38,
           "gridPos": {
             "h": 5,
             "w": 12,
             "x": 12,
-            "y": 57
+            "y": 74
           }
         },
         {
@@ -2515,12 +2729,12 @@
               "sort": "desc"
             }
           },
-          "id": 36,
+          "id": 39,
           "gridPos": {
             "h": 5,
             "w": 12,
             "x": 0,
-            "y": 62
+            "y": 79
           }
         },
         {
@@ -2576,12 +2790,12 @@
               "sort": "desc"
             }
           },
-          "id": 37,
+          "id": 40,
           "gridPos": {
             "h": 5,
             "w": 8,
             "x": 12,
-            "y": 62
+            "y": 79
           }
         },
         {
@@ -2637,12 +2851,12 @@
               "sort": "desc"
             }
           },
-          "id": 38,
+          "id": 41,
           "gridPos": {
             "h": 5,
             "w": 8,
             "x": 0,
-            "y": 67
+            "y": 84
           }
         },
         {
@@ -2701,12 +2915,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 39,
+          "id": 42,
           "gridPos": {
             "h": 5,
             "w": 4,
             "x": 8,
-            "y": 67
+            "y": 84
           }
         },
         {
@@ -2765,12 +2979,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 40,
+          "id": 43,
           "gridPos": {
             "h": 5,
             "w": 4,
             "x": 12,
-            "y": 67
+            "y": 84
           }
         }
       ]
@@ -2779,12 +2993,12 @@
       "type": "row",
       "title": "Cable (DOCSIS)",
       "collapsed": true,
-      "id": 41,
+      "id": 44,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 72
+        "y": 89
       },
       "panels": [
         {
@@ -2840,12 +3054,12 @@
               "sort": "desc"
             }
           },
-          "id": 42,
+          "id": 45,
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 0,
-            "y": 73
+            "y": 90
           }
         },
         {
@@ -2901,12 +3115,12 @@
               "sort": "desc"
             }
           },
-          "id": 43,
+          "id": 46,
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 8,
-            "y": 73
+            "y": 90
           }
         },
         {
@@ -2962,12 +3176,12 @@
               "sort": "desc"
             }
           },
-          "id": 44,
+          "id": 47,
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 16,
-            "y": 73
+            "y": 90
           }
         },
         {
@@ -3032,12 +3246,12 @@
               "sort": "desc"
             }
           },
-          "id": 45,
+          "id": 48,
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 0,
-            "y": 80
+            "y": 97
           }
         },
         {
@@ -3094,12 +3308,12 @@
               "sort": "desc"
             }
           },
-          "id": 46,
+          "id": 49,
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 8,
-            "y": 80
+            "y": 97
           }
         },
         {
@@ -3156,12 +3370,12 @@
               "sort": "desc"
             }
           },
-          "id": 47,
+          "id": 50,
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 16,
-            "y": 80
+            "y": 97
           }
         },
         {
@@ -3217,12 +3431,12 @@
               "sort": "desc"
             }
           },
-          "id": 48,
+          "id": 51,
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 0,
-            "y": 87
+            "y": 104
           }
         },
         {
@@ -3290,12 +3504,12 @@
               }
             }
           ],
-          "id": 49,
+          "id": 52,
           "gridPos": {
             "h": 7,
             "w": 16,
             "x": 8,
-            "y": 87
+            "y": 104
           }
         },
         {
@@ -3362,12 +3576,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 50,
+          "id": 53,
           "gridPos": {
             "h": 7,
             "w": 8,
             "x": 0,
-            "y": 94
+            "y": 111
           }
         }
       ]
@@ -3376,12 +3590,12 @@
       "type": "row",
       "title": "Fibre",
       "collapsed": true,
-      "id": 51,
+      "id": 54,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 101
+        "y": 118
       },
       "panels": [
         {
@@ -3490,12 +3704,12 @@
               "sort": "desc"
             }
           },
-          "id": 52,
+          "id": 55,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 102
+            "y": 119
           }
         },
         {
@@ -3565,12 +3779,12 @@
               "sort": "desc"
             }
           },
-          "id": 53,
+          "id": 56,
           "gridPos": {
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 102
+            "y": 119
           }
         },
         {
@@ -3647,12 +3861,12 @@
               "sort": "desc"
             }
           },
-          "id": 54,
+          "id": 57,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 110
+            "y": 127
           }
         },
         {
@@ -3711,12 +3925,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 55,
+          "id": 58,
           "gridPos": {
             "h": 6,
             "w": 4,
             "x": 12,
-            "y": 110
+            "y": 127
           }
         },
         {
@@ -3775,12 +3989,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 56,
+          "id": 59,
           "gridPos": {
             "h": 3,
             "w": 4,
             "x": 16,
-            "y": 110
+            "y": 127
           }
         },
         {
@@ -3839,12 +4053,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 57,
+          "id": 60,
           "gridPos": {
             "h": 3,
             "w": 2,
             "x": 20,
-            "y": 110
+            "y": 127
           }
         },
         {
@@ -3903,12 +4117,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 58,
+          "id": 61,
           "gridPos": {
             "h": 3,
             "w": 2,
             "x": 22,
-            "y": 110
+            "y": 127
           }
         },
         {
@@ -3976,12 +4190,12 @@
               }
             }
           ],
-          "id": 59,
+          "id": 62,
           "gridPos": {
             "h": 4,
             "w": 12,
             "x": 0,
-            "y": 116
+            "y": 133
           }
         },
         {
@@ -4045,12 +4259,12 @@
               }
             }
           ],
-          "id": 60,
+          "id": 63,
           "gridPos": {
             "h": 4,
             "w": 12,
             "x": 12,
-            "y": 116
+            "y": 133
           }
         }
       ]
@@ -4059,12 +4273,12 @@
       "type": "row",
       "title": "LAN",
       "collapsed": true,
-      "id": 61,
+      "id": 64,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 120
+        "y": 137
       },
       "panels": [
         {
@@ -4139,12 +4353,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 62,
+          "id": 65,
           "gridPos": {
             "h": 6,
             "w": 4,
             "x": 0,
-            "y": 121
+            "y": 138
           }
         },
         {
@@ -4219,12 +4433,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 63,
+          "id": 66,
           "gridPos": {
             "h": 6,
             "w": 4,
             "x": 4,
-            "y": 121
+            "y": 138
           }
         },
         {
@@ -4294,12 +4508,12 @@
               "sort": "desc"
             }
           },
-          "id": 64,
+          "id": 67,
           "gridPos": {
             "h": 6,
             "w": 8,
             "x": 8,
-            "y": 121
+            "y": 138
           }
         },
         {
@@ -4369,12 +4583,12 @@
               "sort": "desc"
             }
           },
-          "id": 65,
+          "id": 68,
           "gridPos": {
             "h": 6,
             "w": 8,
             "x": 16,
-            "y": 121
+            "y": 138
           }
         }
       ]
@@ -4383,12 +4597,12 @@
       "type": "row",
       "title": "WiFi",
       "collapsed": true,
-      "id": 66,
+      "id": 69,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 127
+        "y": 144
       },
       "panels": [
         {
@@ -4591,12 +4805,12 @@
               }
             }
           ],
-          "id": 67,
+          "id": 70,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 128
+            "y": 145
           }
         },
         {
@@ -4653,12 +4867,12 @@
               "sort": "desc"
             }
           },
-          "id": 68,
+          "id": 71,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 128
+            "y": 145
           }
         },
         {
@@ -4728,12 +4942,12 @@
               "sort": "desc"
             }
           },
-          "id": 69,
+          "id": 72,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 134
+            "y": 151
           }
         },
         {
@@ -4893,12 +5107,12 @@
               }
             }
           ],
-          "id": 70,
+          "id": 73,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 134
+            "y": 151
           }
         },
         {
@@ -4954,12 +5168,12 @@
               "sort": "desc"
             }
           },
-          "id": 71,
+          "id": 74,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 141
+            "y": 158
           }
         },
         {
@@ -5016,12 +5230,12 @@
               "sort": "desc"
             }
           },
-          "id": 72,
+          "id": 75,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 141
+            "y": 158
           }
         }
       ]
@@ -5030,12 +5244,12 @@
       "type": "row",
       "title": "Mesh",
       "collapsed": true,
-      "id": 73,
+      "id": 76,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 147
+        "y": 164
       },
       "panels": [
         {
@@ -5091,12 +5305,12 @@
               "showLegend": false
             }
           },
-          "id": 74,
+          "id": 77,
           "gridPos": {
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 148
+            "y": 165
           }
         },
         {
@@ -5187,12 +5401,12 @@
               "sort": "desc"
             }
           },
-          "id": 75,
+          "id": 78,
           "gridPos": {
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 153
+            "y": 170
           }
         }
       ]
@@ -5201,12 +5415,12 @@
       "type": "row",
       "title": "Hosts (host_info)",
       "collapsed": true,
-      "id": 76,
+      "id": 79,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 161
+        "y": 178
       },
       "panels": [
         {
@@ -5264,12 +5478,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 77,
+          "id": 80,
           "gridPos": {
             "h": 8,
             "w": 4,
             "x": 0,
-            "y": 162
+            "y": 179
           }
         },
         {
@@ -5326,12 +5540,12 @@
               "sort": "desc"
             }
           },
-          "id": 78,
+          "id": 81,
           "gridPos": {
             "h": 8,
             "w": 20,
             "x": 4,
-            "y": 162
+            "y": 179
           }
         },
         {
@@ -5484,12 +5698,12 @@
               }
             }
           ],
-          "id": 79,
+          "id": 82,
           "gridPos": {
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 170
+            "y": 187
           }
         }
       ]
@@ -5498,12 +5712,12 @@
       "type": "row",
       "title": "Smart home",
       "collapsed": true,
-      "id": 80,
+      "id": 83,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 180
+        "y": 197
       },
       "panels": [
         {
@@ -5569,12 +5783,12 @@
               "sort": "desc"
             }
           },
-          "id": 81,
+          "id": 84,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 181
+            "y": 198
           }
         },
         {
@@ -5680,12 +5894,12 @@
               "sort": "desc"
             }
           },
-          "id": 82,
+          "id": 85,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 181
+            "y": 198
           }
         },
         {
@@ -5741,12 +5955,12 @@
               "sort": "desc"
             }
           },
-          "id": 83,
+          "id": 86,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 188
+            "y": 205
           }
         },
         {
@@ -5804,12 +6018,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 84,
+          "id": 87,
           "gridPos": {
             "h": 7,
             "w": 6,
             "x": 12,
-            "y": 188
+            "y": 205
           }
         },
         {
@@ -5876,12 +6090,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 85,
+          "id": 88,
           "gridPos": {
             "h": 7,
             "w": 6,
             "x": 18,
-            "y": 188
+            "y": 205
           }
         },
         {
@@ -5960,12 +6174,12 @@
               "showLegend": false
             }
           },
-          "id": 86,
+          "id": 89,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 195
+            "y": 212
           }
         },
         {
@@ -6247,12 +6461,12 @@
               }
             }
           ],
-          "id": 87,
+          "id": 90,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 195
+            "y": 212
           }
         }
       ]
@@ -6261,12 +6475,12 @@
       "type": "row",
       "title": "Provider management (TR-069, USP)",
       "collapsed": true,
-      "id": 88,
+      "id": 91,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 201
+        "y": 218
       },
       "panels": [
         {
@@ -6326,12 +6540,12 @@
               }
             }
           ],
-          "id": 89,
+          "id": 92,
           "gridPos": {
             "h": 4,
             "w": 8,
             "x": 0,
-            "y": 202
+            "y": 219
           }
         },
         {
@@ -6406,12 +6620,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 90,
+          "id": 93,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 202
+            "y": 219
           }
         },
         {
@@ -6470,12 +6684,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 91,
+          "id": 94,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 202
+            "y": 219
           }
         },
         {
@@ -6550,12 +6764,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 92,
+          "id": 95,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 16,
-            "y": 202
+            "y": 219
           }
         },
         {
@@ -6641,12 +6855,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 93,
+          "id": 96,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 20,
-            "y": 202
+            "y": 219
           }
         }
       ]

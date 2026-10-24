@@ -733,6 +733,49 @@ def overview() -> dict:  # noqa: PLR0915
         12,
         8,
     )
+    qos_metric = "fritz_wan_qos_throughput_bps"
+    for title, direction, classes in (
+        ("Upload by QoS class", "tx", "realtime, important, default and background"),
+        ("Download by QoS class", "rx", "internet and multicast (IPTV)"),
+    ):
+        lay.add(
+            timeseries(
+                title,
+                targets(
+                    (
+                        f"sum by (qos_class) ({q(qos_metric, direction=direction)})",
+                        "{{qos_class}}",
+                    )
+                ),
+                unit="bps",
+                stack=True,
+                fill=40,
+                legend="table",
+                soft_min=0,
+                description=f"The throughput of the classes {classes}, from the online "
+                "monitor of the web interface, the mean of the last 80 seconds. The "
+                "line maximum is in the Maximum bit rate panel.",
+            ),
+            12,
+            8,
+        )
+    lay.add(
+        timeseries(
+            "Guest network throughput",
+            targets(
+                (f"{q('fritz_wan_guest_throughput_bps', direction='rx')}", "download"),
+                (f"{q('fritz_wan_guest_throughput_bps', direction='tx')}", "upload"),
+            ),
+            unit="bps",
+            overrides=[upload_below()],
+            fill=25,
+            legend="table",
+            description="The guest network, from the online monitor. The Fritz!Box does not "
+            "document whether it is part of the QoS classes, so it is not stacked with them.",
+        ),
+        12,
+        8,
+    )
     lay.add(
         timeseries(
             "Packets",
