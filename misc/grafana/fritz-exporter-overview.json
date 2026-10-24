@@ -5237,6 +5237,183 @@
             "x": 12,
             "y": 158
           }
+        },
+        {
+          "type": "timeseries",
+          "title": "Fastest client link per band",
+          "description": "The highest link speed of any client on the band, from the web interface. The Fritz!Box does not document which direction is receive.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "max by (band, direction) (fritz_wifi_client_link_speed_bps{friendly_name=\"$device\"})",
+              "refId": "A",
+              "legendFormat": "{{band}} {{direction}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 15,
+                "gradientMode": "opacity",
+                "showPoints": "never",
+                "spanNulls": true,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "bps"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": [],
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "id": 76,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 164
+          }
+        },
+        {
+          "type": "table",
+          "title": "Client links",
+          "description": "Also lists the clients of mesh repeaters; a client on several bands has a row for each.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (client_mac, band) (fritz_wifi_client_link_speed_bps{friendly_name=\"$device\",direction=\"rx\"}) + 0",
+              "refId": "A",
+              "format": "table",
+              "instant": true,
+              "range": false
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "sum by (client_mac, band) (fritz_wifi_client_link_speed_bps{friendly_name=\"$device\",direction=\"tx\"}) + 0",
+              "refId": "B",
+              "format": "table",
+              "instant": true,
+              "range": false
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "align": "auto",
+                "filterable": true
+              }
+            },
+            "overrides": [
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Speed rx"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "bps"
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Speed tx"
+                },
+                "properties": [
+                  {
+                    "id": "unit",
+                    "value": "bps"
+                  }
+                ]
+              }
+            ]
+          },
+          "options": {
+            "showHeader": true,
+            "cellHeight": "sm",
+            "sortBy": [
+              {
+                "displayName": "Speed rx",
+                "desc": true
+              }
+            ]
+          },
+          "transformations": [
+            {
+              "id": "merge",
+              "options": {}
+            },
+            {
+              "id": "organize",
+              "options": {
+                "excludeByName": {
+                  "Time": true,
+                  "__name__": true,
+                  "job": true,
+                  "instance": true,
+                  "source": true,
+                  "serial": true,
+                  "friendly_name": true
+                },
+                "renameByName": {
+                  "client_mac": "MAC",
+                  "band": "Band",
+                  "Value #A": "Speed rx",
+                  "Value #B": "Speed tx"
+                },
+                "indexByName": {
+                  "client_mac": 0,
+                  "band": 1,
+                  "Value #A": 2,
+                  "Value #B": 3
+                }
+              }
+            }
+          ],
+          "id": 77,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 164
+          }
         }
       ]
     },
@@ -5244,12 +5421,12 @@
       "type": "row",
       "title": "Mesh",
       "collapsed": true,
-      "id": 76,
+      "id": 78,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 164
+        "y": 171
       },
       "panels": [
         {
@@ -5305,12 +5482,12 @@
               "showLegend": false
             }
           },
-          "id": 77,
+          "id": 79,
           "gridPos": {
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 165
+            "y": 172
           }
         },
         {
@@ -5401,12 +5578,12 @@
               "sort": "desc"
             }
           },
-          "id": 78,
+          "id": 80,
           "gridPos": {
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 170
+            "y": 177
           }
         }
       ]
@@ -5415,12 +5592,12 @@
       "type": "row",
       "title": "Hosts (host_info)",
       "collapsed": true,
-      "id": 79,
+      "id": 81,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 178
+        "y": 185
       },
       "panels": [
         {
@@ -5478,12 +5655,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 80,
+          "id": 82,
           "gridPos": {
             "h": 8,
             "w": 4,
             "x": 0,
-            "y": 179
+            "y": 186
           }
         },
         {
@@ -5540,12 +5717,12 @@
               "sort": "desc"
             }
           },
-          "id": 81,
+          "id": 83,
           "gridPos": {
             "h": 8,
             "w": 20,
             "x": 4,
-            "y": 179
+            "y": 186
           }
         },
         {
@@ -5698,12 +5875,12 @@
               }
             }
           ],
-          "id": 82,
+          "id": 84,
           "gridPos": {
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 187
+            "y": 194
           }
         }
       ]
@@ -5712,12 +5889,12 @@
       "type": "row",
       "title": "Smart home",
       "collapsed": true,
-      "id": 83,
+      "id": 85,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 197
+        "y": 204
       },
       "panels": [
         {
@@ -5783,12 +5960,12 @@
               "sort": "desc"
             }
           },
-          "id": 84,
+          "id": 86,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 198
+            "y": 205
           }
         },
         {
@@ -5894,12 +6071,12 @@
               "sort": "desc"
             }
           },
-          "id": 85,
+          "id": 87,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 198
+            "y": 205
           }
         },
         {
@@ -5955,12 +6132,12 @@
               "sort": "desc"
             }
           },
-          "id": 86,
+          "id": 88,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 205
+            "y": 212
           }
         },
         {
@@ -6018,12 +6195,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 87,
+          "id": 89,
           "gridPos": {
             "h": 7,
             "w": 6,
             "x": 12,
-            "y": 205
+            "y": 212
           }
         },
         {
@@ -6090,12 +6267,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 88,
+          "id": 90,
           "gridPos": {
             "h": 7,
             "w": 6,
             "x": 18,
-            "y": 205
+            "y": 212
           }
         },
         {
@@ -6174,12 +6351,12 @@
               "showLegend": false
             }
           },
-          "id": 89,
+          "id": 91,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 212
+            "y": 219
           }
         },
         {
@@ -6461,12 +6638,12 @@
               }
             }
           ],
-          "id": 90,
+          "id": 92,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 212
+            "y": 219
           }
         }
       ]
@@ -6475,12 +6652,12 @@
       "type": "row",
       "title": "Provider management (TR-069, USP)",
       "collapsed": true,
-      "id": 91,
+      "id": 93,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 218
+        "y": 225
       },
       "panels": [
         {
@@ -6540,12 +6717,12 @@
               }
             }
           ],
-          "id": 92,
+          "id": 94,
           "gridPos": {
             "h": 4,
             "w": 8,
             "x": 0,
-            "y": 219
+            "y": 226
           }
         },
         {
@@ -6620,12 +6797,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 93,
+          "id": 95,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 219
+            "y": 226
           }
         },
         {
@@ -6684,12 +6861,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 94,
+          "id": 96,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 219
+            "y": 226
           }
         },
         {
@@ -6764,12 +6941,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 95,
+          "id": 97,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 16,
-            "y": 219
+            "y": 226
           }
         },
         {
@@ -6855,12 +7032,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 96,
+          "id": 98,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 20,
-            "y": 219
+            "y": 226
           }
         }
       ]

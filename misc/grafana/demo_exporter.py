@@ -10,6 +10,7 @@ not have show data. Listens on 127.0.0.1 only.
 import copy
 import json
 import math
+import re
 import sys
 import threading
 import time
@@ -32,6 +33,7 @@ from tests.fc_services_mock import (
 )
 from tests.test_fritz_docsis import DOCSIS_RAW
 from tests.test_fritz_dsl import DSL_STAT_RAW
+from tests.test_fritz_net_devices import NET_DEV_RAW
 from tests.test_fritz_rest_api import CONNECTIONS_RAW, SEGMENT_RAW
 from tests.test_fritz_wifi_environment import WIFI_ENVIRONMENT_RAW
 from tests.web_replies import web_reply
@@ -263,6 +265,25 @@ def _net_moni() -> dict:
     return {"data": {"sync_groups": [group]}}
 
 
+def _moving_speeds(text: str, seed: str) -> str:
+    return re.sub(
+        r"(\d+) / (\d+) Mbit/s",
+        lambda m: (
+            f"{_wobble(int(m[1]), seed + 'rx', 0.3):.0f} / "
+            f"{_wobble(int(m[2]), seed + 'tx', 0.3):.0f} Mbit/s"
+        ),
+        text,
+    )
+
+
+def _net_dev() -> dict:
+    raw: Any = copy.deepcopy(NET_DEV_RAW)
+    for device in raw["data"]["active"]:
+        for prop in device["properties"]:
+            prop["txt"] = _moving_speeds(prop["txt"], device["mac"])
+    return raw
+
+
 def _fiber() -> dict:
     return {
         "data": {
@@ -280,6 +301,7 @@ def _webui() -> MagicMock:
         "dslStat": _dsl,
         "chan": _wifi_environment,
         "netMoni": _net_moni,
+        "netDev": _net_dev,
     }.get(page, _fiber)()
     client.fetch_api.side_effect = lambda path: _segment() if "segment" in path else CONNECTIONS_RAW
     return client

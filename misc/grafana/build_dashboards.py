@@ -566,6 +566,12 @@ def q(metric: str, **labels: str) -> str:
     return f"{metric}{{{','.join(matchers)}}}"
 
 
+def link_speed(direction: str) -> str:
+    """The WiFi client link speed per client and band in ``direction`` (rx or tx)."""
+    selector = q("fritz_wifi_client_link_speed_bps", direction=direction)
+    return f"sum by (client_mac, band) ({selector})"
+
+
 def joined(expr: str, info: str, on: str, *labels: str) -> str:
     """``expr`` with ``labels`` from the ``info`` metric (value 1), joined ``on`` its keys."""
     return f"{expr} * on ({on}) group_left ({', '.join(labels)}) {q(info)}"
@@ -1364,6 +1370,45 @@ def overview() -> dict:  # noqa: PLR0915
         ),
         12,
         6,
+    )
+    lay.add(
+        timeseries(
+            "Fastest client link per band",
+            targets(
+                (
+                    f"max by (band, direction) ({q('fritz_wifi_client_link_speed_bps')})",
+                    "{{band}} {{direction}}",
+                )
+            ),
+            unit="bps",
+            soft_min=0,
+            description="The highest link speed of any client on the band, from the web "
+            "interface. The Fritz!Box does not document which direction is receive.",
+        ),
+        12,
+        7,
+    )
+    lay.add(
+        table(
+            "Client links",
+            targets(
+                link_speed("rx"),
+                link_speed("tx"),
+                table=True,
+            ),
+            rename={
+                "client_mac": "MAC",
+                "band": "Band",
+                "Value #A": "Speed rx",
+                "Value #B": "Speed tx",
+            },
+            sort="Speed rx",
+            overrides=[column("Speed rx", unit="bps"), column("Speed tx", unit="bps")],
+            description="Also lists the clients of mesh repeaters; a client on several bands "
+            "has a row for each.",
+        ),
+        12,
+        7,
     )
 
     lay.row_start("Mesh", collapsed=True)

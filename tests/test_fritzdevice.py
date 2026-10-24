@@ -560,6 +560,7 @@ class TestFritzCollector:
             "WlanConfigurationInfo",
             "WlanAssociatedDevices",
             "WlanEnvironment",
+            "WlanClientLinkSpeeds",
             "MeshTopology",
             "HostInfo",
             "HomeAutomation",

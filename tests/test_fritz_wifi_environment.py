@@ -134,7 +134,7 @@ class TestWlanEnvironment:
 
         by_name = self._collect(mock_fritzconnection, client)
 
-        client.fetch_page.assert_called_once_with("chan", xhrId="environment")
+        client.fetch_page.assert_any_call("chan", xhrId="environment")
         airtime = {
             (s.labels["wifi_name"], s.labels["direction"]): s.value
             for s in by_name["fritz_wifi_airtime_ratio"].samples

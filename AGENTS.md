@@ -187,6 +187,7 @@ fritzexporter/
   fritz_dsl.py          # DSL error counter and line data parser (dslStat web UI page)
   fritz_wifi_environment.py # WiFi airtime and neighbouring networks parser (chan web UI page)
   fritz_wan_qos.py      # WAN throughput per QoS class parser (netMoni web UI page)
+  fritz_net_devices.py  # WiFi link speeds per band parser (netDev web UI page)
   tr064_remote.py       # TR-064/web UI ports, WAN remote TR-064 (/tr064) rewriting
   reply.py              # Typed reading of device replies (Reply, read_action, Issues, DataError)
   exceptions.py         # Project-level exceptions

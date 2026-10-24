@@ -72,6 +72,9 @@ The following groups of metrics are currently available:
 * WiFi airtime in use and neighbouring networks per band (2.4, 5 and 6 GHz; from the web interface:
   ``fritz_wifi_airtime_ratio`` and ``fritz_wifi_neighbor_networks``)
 * Mesh backhaul links (data rate and state of the links between mesh nodes, read from the mesh master)
+* WiFi link speeds per client and band, in both directions, also for clients of mesh repeaters and for
+  every band of a client in multi-link operation (``fritz_wifi_client_link_speed_bps``, read from the
+  network overview of the web interface; Ethernet links are not covered)
 * Provider management channel (TR-069 management server host, periodic inform, managed upgrades; USP controller enable flags, see below)
 * Telephony (number of configured telephone numbers; the numbers themselves are not exported)
 * WAN Layer1 (physical link) statistics, including 64-bit max bitrate for multi-gig links

@@ -31,6 +31,7 @@ from fritzexporter.fritz_docsis import (
 )
 from fritzexporter.fritz_dsl import DSL_STAT_PAGE, parse_dsl_stat_response
 from fritzexporter.fritz_fiber import FIBER_STATS_PAGE, parse_fiber_stats_response
+from fritzexporter.fritz_net_devices import NET_DEV_PAGE, parse_net_dev_response
 from fritzexporter.fritz_rest_generic import (
     parse_connections_response,
     parse_monitor_segment,
@@ -1388,6 +1389,43 @@ class WlanEnvironment(FritzCapability):
             self._add("airtime", [*labels, "tx"], band["airtime_transmit"])
             self._add("neighbours", [*labels, "same_channel"], band["neighbours_same_channel"])
             self._add("neighbours", [*labels, "other_channels"], band["neighbours_other_channels"])
+
+
+class WlanClientLinkSpeeds(FritzCapability):
+    """WiFi link speeds per band of the clients, from the web interface.
+
+    TR-064 has one speed per client of the box's own radios. The network overview
+    page ``data.lua?page=netDev`` has the speed of both directions per band, also
+    of the clients of mesh repeaters, and of every band of a client that uses
+    several at once.
+    """
+
+    uses_webui = True
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.requirements.append(("WLANConfiguration1", "GetInfo"))
+
+    def create_metrics(self) -> None:
+        # The band is part of the key: a client in multi-link operation has a speed
+        # on two bands at once, and a roaming client starts a series on its new band.
+        self._gauge(
+            "speed",
+            "fritz_wifi_client_link_speed",
+            "Link speed of a WiFi client on one band in bit/s, as the web interface shows "
+            "it; the Fritz!Box does not document which of the two directions is receive",
+            "client_mac",
+            "band",
+            "direction",
+            unit="bps",
+        )
+
+    def _generate_metric_values(self, device: FritzDevice) -> None:
+        links = parse_net_dev_response(self._webui(device).fetch_page(NET_DEV_PAGE), self.issues)
+        for link in links:
+            labels = [device.serial, device.friendly_name, link["mac"], link["band"]]
+            self._add("speed", [*labels, "rx"], link["receive_bps"])
+            self._add("speed", [*labels, "tx"], link["transmit_bps"])
 
 
 class _MeshLink(NamedTuple):
