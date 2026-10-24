@@ -150,3 +150,67 @@ class TestParseAhaDevicelistXml:
 
         # Check
         assert devices == []
+
+
+class TestMeasurementsAndHeaterStates:
+    def test_reads_voltage_humidity_and_the_heater_states(self):
+        deviceinfo = """<devicelist version="1">
+        <device identifier="1" id="1" manufacturer="AVM" productname="Fritz!DECT 200">
+            <present>1</present><name>plug</name>
+            <powermeter><power>1000</power><energy>5</energy><voltage>233436</voltage></powermeter>
+        </device>
+        <device identifier="2" id="2" manufacturer="AVM" productname="Fritz!Smart Sensor">
+            <present>1</present><name>sensor</name>
+            <humidity><rel_humidity>49</rel_humidity></humidity>
+        </device>
+        <device identifier="3" id="3" manufacturer="AVM" productname="Fritz!DECT 301">
+            <present>1</present><name>thermostat</name>
+            <hkr><tist>40</tist><windowopenactiv>1</windowopenactiv>
+                 <summeractive>0</summeractive><holidayactive>1</holidayactive></hkr>
+        </device></devicelist>"""
+        issues = Issues()
+
+        plug, sensor, thermostat = parse_aha_devicelist_xml(deviceinfo, issues)
+
+        assert plug["powermeter"] is not None
+        assert plug["powermeter"]["voltage"] == 233436
+        assert plug["humidity"] is None
+        assert sensor["humidity"] == 49
+        assert sensor["powermeter"] is None
+        assert thermostat["hkr"] is not None
+        assert thermostat["hkr"]["window_open"] == 1
+        assert thermostat["hkr"]["summer_active"] == 0
+        assert thermostat["hkr"]["holiday_active"] == 1
+        assert issues.messages == []
+
+    def test_absent_elements_mean_unknown(self):
+        deviceinfo = """<devicelist version="1">
+        <device identifier="1" id="1" manufacturer="AVM" productname="Fritz!DECT 301">
+            <present>1</present><name>x</name><hkr><tist>40</tist></hkr>
+            <powermeter><power>1</power></powermeter><humidity></humidity>
+        </device></devicelist>"""
+
+        [device] = parse_aha_devicelist_xml(deviceinfo, Issues())
+
+        assert device["hkr"] is not None
+        assert device["powermeter"] is not None
+        assert device["hkr"]["window_open"] is None
+        assert device["hkr"]["summer_active"] is None
+        assert device["hkr"]["holiday_active"] is None
+        assert device["powermeter"]["voltage"] is None
+        assert device["humidity"] is None
+
+    def test_records_a_non_numeric_humidity_and_skips_the_value(self):
+        deviceinfo = """<devicelist version="1">
+        <device identifier="1" id="1" manufacturer="AVM" productname="Fritz!Smart Sensor">
+            <present>1</present><name>x</name>
+            <humidity><rel_humidity>damp</rel_humidity></humidity>
+        </device></devicelist>"""
+        issues = Issues()
+
+        [device] = parse_aha_devicelist_xml(deviceinfo, issues)
+
+        assert device["humidity"] is None
+        assert issues.messages == [
+            "smart home device 0 humidity rel_humidity: expected a whole number, got str"
+        ]

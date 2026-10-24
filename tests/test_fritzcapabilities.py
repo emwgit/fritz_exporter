@@ -438,6 +438,43 @@ class TestHomeAutomationCapability:
         assert len(temp_metrics) == 1
         assert len(temp_metrics[0].samples) == 0
 
+    def test_homeautomation_exports_voltage_humidity_and_heater_states(
+        self, mock_fritzconnection: MagicMock
+    ):
+        # Prepare
+        xml = self._make_devicelist_xml(
+            '<device identifier="1" id="1" manufacturer="AVM" productname="Plug">'
+            "<present>1</present><name>Plug</name>"
+            "<powermeter><power>1000</power><energy>5</energy><voltage>233436</voltage>"
+            "</powermeter></device>",
+            '<device identifier="2" id="2" manufacturer="AVM" productname="Sensor">'
+            "<present>1</present><name>Sensor</name>"
+            "<humidity><rel_humidity>49</rel_humidity></humidity></device>",
+            '<device identifier="3" id="3" manufacturer="AVM" productname="Thermo">'
+            "<present>1</present><name>Thermo</name>"
+            "<hkr><tist>40</tist><tsoll>42</tsoll><absenk>34</absenk><komfort>42</komfort>"
+            "<windowopenactiv>1</windowopenactiv><summeractive>0</summeractive>"
+            "<holidayactive>1</holidayactive></hkr></device>",
+        )
+        collector, device, _ = self._setup_ha_device(mock_fritzconnection, xml)
+
+        # Act
+        metrics: list[Metric] = list(collector.collect())
+
+        # Check
+        def value(name: str, device_name: str) -> float:
+            [metric] = [m for m in metrics if m.name == name]
+            [sample] = [s for s in metric.samples if s.labels["device_name"] == device_name]
+            return sample.value
+
+        assert value("fritz_ha_multimeter_voltage_V", "Plug") == pytest.approx(233.436)
+        assert value("fritz_ha_humidity_percent", "Sensor") == 49
+        assert value("fritz_ha_heater_window_open", "Thermo") == 1
+        assert value("fritz_ha_heater_summer_active", "Thermo") == 0
+        assert value("fritz_ha_heater_holiday_active", "Thermo") == 1
+        [humidity] = [m for m in metrics if m.name == "fritz_ha_humidity_percent"]
+        assert [s.labels["device_name"] for s in humidity.samples] == ["Sensor"]
+
     def test_homeautomation_with_disabled_switch(self, mock_fritzconnection: MagicMock):
         # Prepare
         xml = self._make_devicelist_xml(self._make_device_xml(include_switch=False))

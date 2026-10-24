@@ -1570,6 +1570,8 @@ class HomeAutomation(FritzCapability):
             ("battery_low", "fritz_ha_battery_low", "Indicates that the battery is low"),
             ("multimeter_power", "fritz_ha_multimeter_power_W", "Power in W"),
             ("multimeter_energy", "fritz_ha_multimeter_energy_Wh", "Energy in Wh"),
+            ("multimeter_voltage", "fritz_ha_multimeter_voltage_V", "Voltage in V"),
+            ("humidity", "fritz_ha_humidity_percent", "Relative humidity in percent"),
             ("temperature", "fritz_ha_temperature_C", "Temperature in °C"),
             (
                 "temperature_offset",
@@ -1614,6 +1616,21 @@ class HomeAutomation(FritzCapability):
                 "fritz_ha_heater_comfort_valve_state",
                 "Heater comfort valve state",
             ),
+            (
+                "heater_window_open",
+                "fritz_ha_heater_window_open",
+                "Indicates that the heater detected an open window",
+            ),
+            (
+                "heater_summer_active",
+                "fritz_ha_heater_summer_active",
+                "Indicates that the heater is in its summer period",
+            ),
+            (
+                "heater_holiday_active",
+                "fritz_ha_heater_holiday_active",
+                "Indicates that the heater is in its holiday period",
+            ),
         ]
         for key, metric_name, help_text in metric_definitions:
             self._gauge(key, metric_name, help_text, *self._HA_LABELS)
@@ -1635,6 +1652,10 @@ class HomeAutomation(FritzCapability):
             return
         self._add("multimeter_power", labels, _div(powermeter["power"], 1000))
         self._add("multimeter_energy", labels, powermeter["energy"])
+        self._add("multimeter_voltage", labels, _div(powermeter["voltage"], 1000))
+
+    def _collect_humidity(self, ha_device: AhaDevice, labels: list[str]) -> None:
+        self._add("humidity", labels, ha_device["humidity"])
 
     def _collect_temperature(self, ha_device: AhaDevice, labels: list[str]) -> None:
         temperature = ha_device["temperature"]
@@ -1663,6 +1684,9 @@ class HomeAutomation(FritzCapability):
         self._add("heater_set_temperature", labels, _hkr_setting(hkr["tsoll"]))
         self._add("heater_reduced_temperature", labels, _hkr_setting(hkr["absenk"]))
         self._add("heater_comfort_temperature", labels, _hkr_setting(hkr["komfort"]))
+        self._add("heater_window_open", labels, hkr["window_open"])
+        self._add("heater_summer_active", labels, hkr["summer_active"])
+        self._add("heater_holiday_active", labels, hkr["holiday_active"])
 
     def _collect_heater_valve_state(
         self, device: FritzDevice, ain: str, what: str, labels: list[str]
@@ -1707,6 +1731,7 @@ class HomeAutomation(FritzCapability):
             self._add("devicepresent", labels, 2 if ha_device["present"] else 0)
             self._collect_multimeter(ha_device, labels)
             self._collect_temperature(ha_device, labels)
+            self._collect_humidity(ha_device, labels)
             self._collect_switch(ha_device, labels)
             self._collect_heater(ha_device, labels)
             self._collect_battery(ha_device, labels)
