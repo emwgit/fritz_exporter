@@ -34,6 +34,7 @@ from fritzexporter.fritz_rest_generic import (
     parse_connections_response,
     parse_monitor_segment,
 )
+from fritzexporter.fritz_smart_home import SMART_HOME_PAGE, parse_smart_home_currents
 from fritzexporter.fritz_webui import FritzWebUiClient, FritzWebUiError
 from fritzexporter.reply import DataError, Issues, Reply, read_action
 from fritzexporter.tr064_remote import TRANSPORT_ERRORS, transport_failure_text
@@ -1571,6 +1572,7 @@ class HomeAutomation(FritzCapability):
             ("multimeter_power", "fritz_ha_multimeter_power_W", "Power in W"),
             ("multimeter_energy", "fritz_ha_multimeter_energy_Wh", "Energy in Wh"),
             ("multimeter_voltage", "fritz_ha_multimeter_voltage_V", "Voltage in V"),
+            ("multimeter_current", "fritz_ha_multimeter_current_A", "Current in A"),
             ("humidity", "fritz_ha_humidity_percent", "Relative humidity in percent"),
             ("temperature", "fritz_ha_temperature_C", "Temperature in °C"),
             (
@@ -1654,6 +1656,19 @@ class HomeAutomation(FritzCapability):
         self._add("multimeter_energy", labels, powermeter["energy"])
         self._add("multimeter_voltage", labels, _div(powermeter["voltage"], 1000))
 
+    def _collect_currents(self, device: FritzDevice, labels_by_ain: dict[str, list[str]]) -> None:
+        # The AHA device list has no current: it is only on the web UI page "sh".
+        # A failure there must not cost the other smart home metrics.
+        try:
+            currents = parse_smart_home_currents(
+                self._webui(device).fetch_page(SMART_HOME_PAGE), self.issues
+            )
+        except (FritzWebUiError, DataError) as e:
+            self.issues.messages.append(f"electric current from the web interface skipped: {e}")
+            return
+        for ain, labels in labels_by_ain.items():
+            self._add("multimeter_current", labels, currents.get(ain))
+
     def _collect_humidity(self, ha_device: AhaDevice, labels: list[str]) -> None:
         self._add("humidity", labels, ha_device["humidity"])
 
@@ -1723,8 +1738,11 @@ class HomeAutomation(FritzCapability):
         # The AHA interface is part of the web UI, not TR-064: use the web UI
         # client, which targets the right port for local TLS and remote access.
         devicelist_xml = self._webui(device).fetch_aha("getdevicelistinfos")
+        metered: dict[str, list[str]] = {}
         for index, ha_device in enumerate(parse_aha_devicelist_xml(devicelist_xml, self.issues)):
             labels = self._build_ha_labels(device, ha_device)
+            if ha_device["powermeter"] is not None:
+                metered[ha_device["ain"]] = labels
 
             # 2 for present, not 1: what the exporter has always sent, and what
             # dashboards and alerts compare with.
@@ -1740,6 +1758,8 @@ class HomeAutomation(FritzCapability):
                 what = f"smart home device {index}"
                 with self._item(f"valve state of {what}"):
                     self._collect_heater_valve_state(device, ha_device["ain"], what, labels)
+        if metered:
+            self._collect_currents(device, metered)
 
 
 class WanDocsisCable(FritzCapability):

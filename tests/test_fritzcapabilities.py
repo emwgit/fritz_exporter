@@ -475,6 +475,59 @@ class TestHomeAutomationCapability:
         [humidity] = [m for m in metrics if m.name == "fritz_ha_humidity_percent"]
         assert [s.labels["device_name"] for s in humidity.samples] == ["Sensor"]
 
+    def test_homeautomation_exports_the_current_from_the_sh_page(
+        self, mock_fritzconnection: MagicMock
+    ):
+        # Prepare: two sockets, the page sh knows the current of one of them only
+        xml = self._make_devicelist_xml(
+            self._make_device_xml(ain="0815 1"), self._make_device_xml(ain="0815 2")
+        )
+        collector, device, _ = self._setup_ha_device(mock_fritzconnection, xml)
+        multimeter = {"type": "SmartHomeMultimeter", "electricCurrentInAmpere": 0.6345}
+        device.webui_client.fetch_page.return_value = {
+            "data": {"devices": [{"actorIdentificationNumber": "0815 1", "units": [{"skills": [multimeter]}]}]}
+        }
+
+        # Act
+        metrics: list[Metric] = list(collector.collect())
+
+        # Check
+        [current] = [m for m in metrics if m.name == "fritz_ha_multimeter_current_A"]
+        [sample] = current.samples
+        assert sample.value == pytest.approx(0.6345)
+        assert sample.labels["ain"] == "0815 1"
+        device.webui_client.fetch_page.assert_called_once_with("sh")
+
+    def test_homeautomation_keeps_the_other_metrics_if_the_sh_page_fails(
+        self, mock_fritzconnection: MagicMock
+    ):
+        # Prepare
+        xml = self._make_devicelist_xml(self._make_device_xml())
+        collector, device, _ = self._setup_ha_device(mock_fritzconnection, xml)
+        device.webui_client.fetch_page.side_effect = FritzWebUiError("data.lua request failed")
+
+        # Act
+        metrics: list[Metric] = list(collector.collect())
+
+        # Check
+        [current] = [m for m in metrics if m.name == "fritz_ha_multimeter_current_A"]
+        assert current.samples == []
+        [power] = [m for m in metrics if m.name == "fritz_ha_multimeter_power_W"]
+        assert len(power.samples) == 1
+
+    def test_homeautomation_does_not_fetch_the_sh_page_without_a_power_meter(
+        self, mock_fritzconnection: MagicMock
+    ):
+        # Prepare
+        xml = self._make_devicelist_xml(self._make_device_xml(include_powermeter=False))
+        collector, device, _ = self._setup_ha_device(mock_fritzconnection, xml)
+
+        # Act
+        list(collector.collect())
+
+        # Check
+        device.webui_client.fetch_page.assert_not_called()
+
     def test_homeautomation_with_disabled_switch(self, mock_fritzconnection: MagicMock):
         # Prepare
         xml = self._make_devicelist_xml(self._make_device_xml(include_switch=False))
