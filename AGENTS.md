@@ -184,6 +184,7 @@ fritzexporter/
   fritz_docsis.py       # DOCSIS cable channel types + parser (web UI page)
   fritz_rest_generic.py # Technology-agnostic /api/v0 REST parsers (connections, segments)
   fritz_fiber.py        # Fibre optical level parser (fiberStats web UI page)
+  fritz_wifi_environment.py # WiFi airtime and neighbouring networks parser (chan web UI page)
   tr064_remote.py       # TR-064/web UI ports, WAN remote TR-064 (/tr064) rewriting
   reply.py              # Typed reading of device replies (Reply, read_action, Issues, DataError)
   exceptions.py         # Project-level exceptions
