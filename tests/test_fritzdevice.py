@@ -548,6 +548,7 @@ class TestFritzCollector:
             "LanInterfaceConfigStatistics",
             "WanDSLInterfaceConfig",
             "WanDSLInterfaceConfigAVM",
+            "WanDslLineStatistics",
             "WanFiberInterfaceConfig",
             "WanFiberGPONInfo",
             "WanFiberStatistics",

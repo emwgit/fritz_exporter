@@ -31,6 +31,7 @@ from tests.fc_services_mock import (
     fc_services_capabilities,
 )
 from tests.test_fritz_docsis import DOCSIS_RAW
+from tests.test_fritz_dsl import DSL_STAT_RAW
 from tests.test_fritz_rest_api import CONNECTIONS_RAW, SEGMENT_RAW
 from tests.web_replies import web_reply
 
@@ -141,6 +142,15 @@ def _docsis() -> dict:
     return raw
 
 
+def _dsl() -> dict:
+    raw: Any = copy.deepcopy(DSL_STAT_RAW)
+    for row in raw["data"]["errorCounters"]:
+        for value in row.get("val", []):
+            for key in ("us", "ds"):
+                value[key] = f"{_wobble(float(value[key]) + 1, row['title'] + key, 0.5):.1f}"
+    return raw
+
+
 def _segment() -> dict:
     raw: Any = copy.deepcopy(SEGMENT_RAW)
     raw["lastSampleTime"] = int(time.time()) // 60 * 60
@@ -225,19 +235,22 @@ def _mesh_topology() -> dict:
     }
 
 
+def _fiber() -> dict:
+    return {
+        "data": {
+            "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
+            "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
+        }
+    }
+
+
 def _webui() -> MagicMock:
     client = MagicMock()
     client.fetch_aha.side_effect = lambda *_a, **_k: _aha()
-    client.fetch_page.side_effect = lambda page: (
-        _docsis()
-        if page == "docInfo"
-        else {
-            "data": {
-                "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
-                "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
-            }
-        }
-    )
+    client.fetch_page.side_effect = lambda page: {
+        "docInfo": _docsis,
+        "dslStat": _dsl,
+    }.get(page, _fiber)()
     client.fetch_api.side_effect = lambda path: _segment() if "segment" in path else CONNECTIONS_RAW
     return client
 
