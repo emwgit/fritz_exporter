@@ -5186,6 +5186,67 @@
         },
         {
           "type": "timeseries",
+          "title": "Humidity",
+          "description": "",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "fritz_ha_humidity_percent{friendly_name=\"$device\"}",
+              "refId": "A",
+              "legendFormat": "{{device_name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 15,
+                "gradientMode": "opacity",
+                "showPoints": "never",
+                "spanNulls": true,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "percent"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": [],
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "id": 75,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 0,
+            "y": 172
+          }
+        },
+        {
+          "type": "timeseries",
           "title": "Power",
           "description": "",
           "datasource": {
@@ -5237,12 +5298,73 @@
               "sort": "desc"
             }
           },
-          "id": 75,
+          "id": 76,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 172
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Voltage",
+          "description": "",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "fritz_ha_multimeter_voltage_V{friendly_name=\"$device\"}",
+              "refId": "A",
+              "legendFormat": "{{device_name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 15,
+                "gradientMode": "opacity",
+                "showPoints": "never",
+                "spanNulls": true,
+                "axisSoftMin": null,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "volt"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": [],
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "id": 77,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 172
+            "y": 179
           }
         },
         {
@@ -5300,12 +5422,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 76,
+          "id": 78,
           "gridPos": {
             "h": 7,
             "w": 6,
             "x": 12,
-            "y": 172
+            "y": 179
           }
         },
         {
@@ -5372,12 +5494,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 77,
+          "id": 79,
           "gridPos": {
             "h": 7,
             "w": 6,
             "x": 18,
-            "y": 172
+            "y": 179
           }
         },
         {
@@ -5456,12 +5578,12 @@
               "showLegend": false
             }
           },
-          "id": 78,
+          "id": 80,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 179
+            "y": 186
           }
         },
         {
@@ -5524,6 +5646,39 @@
               },
               "expr": "fritz_ha_battery_low{friendly_name=\"$device\"} + 0",
               "refId": "E",
+              "format": "table",
+              "instant": true,
+              "range": false
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "fritz_ha_heater_window_open{friendly_name=\"$device\"} + 0",
+              "refId": "F",
+              "format": "table",
+              "instant": true,
+              "range": false
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "fritz_ha_heater_summer_active{friendly_name=\"$device\"} + 0",
+              "refId": "G",
+              "format": "table",
+              "instant": true,
+              "range": false
+            },
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "fritz_ha_heater_holiday_active{friendly_name=\"$device\"} + 0",
+              "refId": "H",
               "format": "table",
               "instant": true,
               "range": false
@@ -5694,6 +5849,96 @@
                     }
                   }
                 ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Window open"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "1": {
+                            "text": "Yes",
+                            "color": "orange",
+                            "index": 0
+                          },
+                          "0": {
+                            "text": "No",
+                            "color": "green",
+                            "index": 1
+                          }
+                        }
+                      }
+                    ]
+                  },
+                  {
+                    "id": "custom.cellOptions",
+                    "value": {
+                      "type": "color-text"
+                    }
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Summer"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "1": {
+                            "text": "Yes",
+                            "color": "orange",
+                            "index": 0
+                          },
+                          "0": {
+                            "text": "No",
+                            "color": "green",
+                            "index": 1
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
+              },
+              {
+                "matcher": {
+                  "id": "byName",
+                  "options": "Holiday"
+                },
+                "properties": [
+                  {
+                    "id": "mappings",
+                    "value": [
+                      {
+                        "type": "value",
+                        "options": {
+                          "1": {
+                            "text": "Yes",
+                            "color": "orange",
+                            "index": 0
+                          },
+                          "0": {
+                            "text": "No",
+                            "color": "green",
+                            "index": 1
+                          }
+                        }
+                      }
+                    ]
+                  }
+                ]
               }
             ]
           },
@@ -5728,7 +5973,10 @@
                   "Value #B": "Switch",
                   "Value #C": "Mode",
                   "Value #D": "Locked",
-                  "Value #E": "Battery low"
+                  "Value #E": "Battery low",
+                  "Value #F": "Window open",
+                  "Value #G": "Summer",
+                  "Value #H": "Holiday"
                 },
                 "indexByName": {
                   "device_name": 0,
@@ -5738,17 +5986,20 @@
                   "Value #B": 4,
                   "Value #C": 5,
                   "Value #D": 6,
-                  "Value #E": 7
+                  "Value #E": 7,
+                  "Value #F": 8,
+                  "Value #G": 9,
+                  "Value #H": 10
                 }
               }
             }
           ],
-          "id": 79,
+          "id": 81,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 179
+            "y": 186
           }
         }
       ]
@@ -5757,12 +6008,12 @@
       "type": "row",
       "title": "Provider management (TR-069, USP)",
       "collapsed": true,
-      "id": 80,
+      "id": 82,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 185
+        "y": 192
       },
       "panels": [
         {
@@ -5822,12 +6073,12 @@
               }
             }
           ],
-          "id": 81,
+          "id": 83,
           "gridPos": {
             "h": 4,
             "w": 8,
             "x": 0,
-            "y": 186
+            "y": 193
           }
         },
         {
@@ -5902,12 +6153,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 82,
+          "id": 84,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 186
+            "y": 193
           }
         },
         {
@@ -5966,12 +6217,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 83,
+          "id": 85,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 186
+            "y": 193
           }
         },
         {
@@ -6046,12 +6297,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 84,
+          "id": 86,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 16,
-            "y": 186
+            "y": 193
           }
         },
         {
@@ -6137,12 +6388,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 85,
+          "id": 87,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 20,
-            "y": 186
+            "y": 193
           }
         }
       ]

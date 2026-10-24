@@ -1364,8 +1364,23 @@ def overview() -> dict:  # noqa: PLR0915
     )
     lay.add(
         timeseries(
+            "Humidity",
+            targets((q("fritz_ha_humidity_percent"), ha_name)),
+            unit="percent",
+            soft_min=0,
+        ),
+        12,
+        7,
+    )
+    lay.add(
+        timeseries(
             "Power", targets((q("fritz_ha_multimeter_power_W"), ha_name)), unit="watt", fill=30
         ),
+        12,
+        7,
+    )
+    lay.add(
+        timeseries("Voltage", targets((q("fritz_ha_multimeter_voltage_V"), ha_name)), unit="volt"),
         12,
         7,
     )
@@ -1420,6 +1435,9 @@ def overview() -> dict:  # noqa: PLR0915
                 q("fritz_ha_switch_mode"),
                 q("fritz_ha_switch_lock"),
                 q("fritz_ha_battery_low"),
+                q("fritz_ha_heater_window_open"),
+                q("fritz_ha_heater_summer_active"),
+                q("fritz_ha_heater_holiday_active"),
                 table=True,
             ),
             rename={
@@ -1431,6 +1449,9 @@ def overview() -> dict:  # noqa: PLR0915
                 "Value #C": "Mode",
                 "Value #D": "Locked",
                 "Value #E": "Battery low",
+                "Value #F": "Window open",
+                "Value #G": "Summer",
+                "Value #H": "Holiday",
             },
             hide=["ain", "device_id"],
             overrides=[
@@ -1445,6 +1466,11 @@ def overview() -> dict:  # noqa: PLR0915
                 column(
                     "Battery low", mappings=YES_NO, **{"custom.cellOptions": cell("color-text")}
                 ),
+                column(
+                    "Window open", mappings=YES_NO, **{"custom.cellOptions": cell("color-text")}
+                ),
+                column("Summer", mappings=YES_NO),
+                column("Holiday", mappings=YES_NO),
             ],
             description="fritz_ha_device_present is 2 for present, kept for compatibility.",
         ),
