@@ -718,11 +718,11 @@ class WanDslLineStatistics(FritzCapability):
             ("errored_seconds", "fritz_dsl_errored_seconds", "Errored seconds"),
             ("severely_errored", "fritz_dsl_severely_errored_seconds", "Severely errored seconds"),
         ):
-            self._gauge(
+            self._counter(
                 key,
                 name,
-                f"{what} of the DSL line as reported by the Fritz!Box, "
-                "which does not document the period they are counted over",
+                f"{what} of the DSL line as reported by the Fritz!Box; the box does not "
+                "document its starting point, so it may restart from zero",
                 "direction",
                 unit="seconds",
             )

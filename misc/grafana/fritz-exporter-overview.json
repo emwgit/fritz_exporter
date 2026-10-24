@@ -2609,7 +2609,7 @@
         {
           "type": "timeseries",
           "title": "Errored seconds",
-          "description": "As counted by the Fritz!Box; it does not document the period.",
+          "description": "Seconds added per interval to the counters of the Fritz!Box, which does not document their starting point.",
           "datasource": {
             "type": "prometheus",
             "uid": "${datasource}"
@@ -2620,7 +2620,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "fritz_dsl_errored_seconds{friendly_name=\"$device\"}",
+              "expr": "increase(fritz_dsl_errored_seconds_total{friendly_name=\"$device\"}[$__interval])",
               "refId": "A",
               "legendFormat": "errored {{direction}}"
             },
@@ -2629,7 +2629,7 @@
                 "type": "prometheus",
                 "uid": "${datasource}"
               },
-              "expr": "fritz_dsl_severely_errored_seconds{friendly_name=\"$device\"}",
+              "expr": "increase(fritz_dsl_severely_errored_seconds_total{friendly_name=\"$device\"}[$__interval])",
               "refId": "B",
               "legendFormat": "severely errored {{direction}}"
             }

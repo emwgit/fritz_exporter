@@ -54,6 +54,8 @@ def _elapsed() -> float:
 
 # A wobbling value of 1 (0 to 2) above this means "window open" for part of the time.
 WINDOW_OPEN_ABOVE = 1.3
+# Rows of the errored seconds on the dslStat page and the seconds per added second.
+ERRORED_SECOND_ROWS = {"Fehlern (ES)": 900, "Fehlern (SES)": 18_000}
 
 
 def _wobble(value: float, seed: str, amount: float = 0.15) -> float:
@@ -155,6 +157,9 @@ def _dsl() -> dict:
         for value in row.get("val", []):
             for key in ("us", "ds"):
                 value[key] = f"{_wobble(float(value[key]) + 1, row['title'] + key, 0.5):.1f}"
+        if row.get("title") in ERRORED_SECOND_ROWS:
+            divisor = ERRORED_SECOND_ROWS[row["title"]]
+            row["val"][0]["ds"] = str(int(time.time()) // divisor)
     return raw
 
 
