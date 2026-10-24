@@ -4,6 +4,7 @@ import logging
 from unittest.mock import MagicMock, patch
 
 import pytest
+from fritzconnection.core.exceptions import FritzInternalError
 
 from fritzexporter.fritz_fiber import parse_fiber_stats_response
 from fritzexporter.fritz_webui import FritzWebUiError
@@ -169,3 +170,54 @@ class TestWanFiberWebUiFallback:
             )
         )
         assert device.webui_client is mock_webui_client.return_value
+
+
+FIBRE_NAMES = ("WanFiberInterfaceConfig", "WanFiberGPONInfo", "WanFiberStatistics")
+FIBRE_SERVICES = {"X_AVM-DE_WANFiber1": ["GetInfo", "GetInfoGPON", "GetStatistics"]}
+
+
+def _access_type(access_type: str) -> dict:
+    return {("WANCommonInterfaceConfig1", "GetCommonLinkProperties"): {"NewWANAccessType": access_type}}
+
+
+def _fibre_calls(mock_fritzconnection: MagicMock) -> list:
+    return [c for c in mock_fritzconnection.return_value.call_action.call_args_list if c.args[0] == "X_AVM-DE_WANFiber1"]
+
+
+@patch("fritzexporter.tr064_remote.FritzConnection")
+class TestFibreCapabilitiesFollowTheAccessType:
+    """A box with a fibre port that sits on a DSL line advertises the fibre service in vain."""
+
+    @pytest.mark.parametrize("access_type", ["DSL", "Cable", "X_AVM-DE_Cable"])
+    def test_not_offered_on_another_access_type_and_never_called(
+        self, mock_fritzconnection: MagicMock, access_type: str
+    ):
+        device = fake_device(
+            mock_fritzconnection,
+            services("DeviceInfo", **FIBRE_SERVICES),
+            overrides=_access_type(access_type),
+        )
+
+        assert not any(device.capabilities[name].present for name in FIBRE_NAMES)
+        assert _fibre_calls(mock_fritzconnection) == []
+
+    def test_offered_on_a_fibre_line(self, mock_fritzconnection: MagicMock):
+        device = fake_device(
+            mock_fritzconnection,
+            services("DeviceInfo", **FIBRE_SERVICES),
+            overrides=_access_type("X_AVM-DE_Fiber"),
+        )
+
+        assert all(device.capabilities[name].present for name in FIBRE_NAMES)
+
+    def test_offered_if_the_access_type_cannot_be_read(self, mock_fritzconnection: MagicMock):
+        def unreadable(**_: object) -> dict:
+            raise FritzInternalError
+
+        device = fake_device(
+            mock_fritzconnection,
+            services("DeviceInfo", **FIBRE_SERVICES),
+            overrides={("WANCommonInterfaceConfig1", "GetCommonLinkProperties"): unreadable},
+        )
+
+        assert all(device.capabilities[name].present for name in FIBRE_NAMES)

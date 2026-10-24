@@ -688,7 +688,39 @@ class WanDSLInterfaceConfigAVM(FritzCapability):
         self._add("crc", labels, self.issues.num(result, "NewCRCErrors"))
 
 
-class WanFiberInterfaceConfig(FritzCapability):
+class _WanFiber(FritzCapability):
+    """Base of the capabilities that read the X_AVM-DE_WANFiber1 service.
+
+    A box with a fibre port advertises the service on a DSL line as well, and answers
+    its actions with "Internal Error" (UPnP 820) on some requests and not on others.
+    The capabilities are therefore not offered while the box reports another access
+    type than fibre.
+    """
+
+    _NOT_FIBRE: ClassVar[tuple[str, ...]] = ("DSL", "Cable", "X_AVM-DE_Cable")
+
+    def check_capability(self, device: FritzDevice) -> None:
+        try:
+            access_type = read_action(
+                device, "WANCommonInterfaceConfig1", "GetCommonLinkProperties"
+            ).opt_text("NewWANAccessType")
+        except TRANSPORT_ERRORS:
+            raise
+        except FritzConnectionException, DataError:
+            access_type = None
+        if access_type in self._NOT_FIBRE:
+            self.present = False
+            logger.debug(
+                "WAN access type %s on %s, capability %s disabled",
+                access_type,
+                device.log_name,
+                type(self).__name__,
+            )
+            return
+        super().check_capability(device)
+
+
+class WanFiberInterfaceConfig(_WanFiber):
     """Optical / SFP metrics from X_AVM-DE_WANFiber.GetInfo."""
 
     uses_webui = True
@@ -790,7 +822,7 @@ class WanFiberInterfaceConfig(FritzCapability):
         return levels["receive_dbm"], levels["transmit_dbm"]
 
 
-class WanFiberGPONInfo(FritzCapability):
+class WanFiberGPONInfo(_WanFiber):
     """GPON identity metrics from X_AVM-DE_WANFiber.GetInfoGPON."""
 
     def __init__(self) -> None:
@@ -827,7 +859,7 @@ class WanFiberGPONInfo(FritzCapability):
         self._add("gem_ports", labels, self.issues.num(result, "NewGEMPortCount"))
 
 
-class WanFiberStatistics(FritzCapability):
+class WanFiberStatistics(_WanFiber):
     """Fibre link statistics from X_AVM-DE_WANFiber.GetStatistics."""
 
     def __init__(self) -> None:
