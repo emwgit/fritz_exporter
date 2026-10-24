@@ -1297,6 +1297,31 @@ def overview() -> dict:  # noqa: PLR0915
         12,
         7,
     )
+    lay.add(
+        timeseries(
+            "Airtime in use",
+            targets((q("fritz_wifi_airtime_ratio"), "{{wifi_name}} {{direction}}")),
+            unit="percentunit",
+            soft_min=0,
+            description="Mean of the last minute. The Fritz!Box does not document what "
+            "receive and transmit are; transmit never exceeded receive.",
+        ),
+        12,
+        6,
+    )
+    lay.add(
+        timeseries(
+            "Neighbouring networks",
+            targets((q("fritz_wifi_neighbor_networks"), "{{wifi_name}} {{relation}}")),
+            stack=True,
+            fill=40,
+            decimals=0,
+            description="Networks of others the last scan found: on the channel the band "
+            "uses, or on other channels.",
+        ),
+        12,
+        6,
+    )
 
     lay.row_start("Mesh", collapsed=True)
     lay.add(

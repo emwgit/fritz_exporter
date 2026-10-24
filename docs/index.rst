@@ -65,6 +65,8 @@ The following groups of metrics are currently available:
 * Fibre / GPON statistics (optical levels, SFP/GPON identity, fibre counters)
 * PPP statistics
 * WiFi statistics per band, with SSID and standard in ``fritz_wifi_info`` (with ``wifi_client_info`` enabled, also signal strength and speed of each client, with band and address in ``fritz_wifi_client_info``)
+* WiFi airtime in use and neighbouring networks per band (2.4, 5 and 6 GHz; from the web interface:
+  ``fritz_wifi_airtime_ratio`` and ``fritz_wifi_neighbor_networks``)
 * Mesh backhaul links (data rate and state of the links between mesh nodes, read from the mesh master)
 * Provider management channel (TR-069 management server host, periodic inform, managed upgrades; USP controller enable flags, see below)
 * Telephony (number of configured telephone numbers; the numbers themselves are not exported)

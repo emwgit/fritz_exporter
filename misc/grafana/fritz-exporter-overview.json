@@ -4900,6 +4900,129 @@
             "x": 12,
             "y": 134
           }
+        },
+        {
+          "type": "timeseries",
+          "title": "Airtime in use",
+          "description": "Mean of the last minute. The Fritz!Box does not document what receive and transmit are; transmit never exceeded receive.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "fritz_wifi_airtime_ratio{friendly_name=\"$device\"}",
+              "refId": "A",
+              "legendFormat": "{{wifi_name}} {{direction}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 15,
+                "gradientMode": "opacity",
+                "showPoints": "never",
+                "spanNulls": true,
+                "axisSoftMin": 0,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "percentunit"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": [],
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "id": 71,
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 0,
+            "y": 141
+          }
+        },
+        {
+          "type": "timeseries",
+          "title": "Neighbouring networks",
+          "description": "Networks of others the last scan found: on the channel the band uses, or on other channels.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "fritz_wifi_neighbor_networks{friendly_name=\"$device\"}",
+              "refId": "A",
+              "legendFormat": "{{wifi_name}} {{relation}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 40,
+                "gradientMode": "opacity",
+                "showPoints": "never",
+                "spanNulls": true,
+                "axisSoftMin": null,
+                "stacking": {
+                  "mode": "normal",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "decimals": 0,
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": [],
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "id": 72,
+          "gridPos": {
+            "h": 6,
+            "w": 12,
+            "x": 12,
+            "y": 141
+          }
         }
       ]
     },
@@ -4907,12 +5030,12 @@
       "type": "row",
       "title": "Mesh",
       "collapsed": true,
-      "id": 71,
+      "id": 73,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 141
+        "y": 147
       },
       "panels": [
         {
@@ -4968,12 +5091,12 @@
               "showLegend": false
             }
           },
-          "id": 72,
+          "id": 74,
           "gridPos": {
             "h": 5,
             "w": 24,
             "x": 0,
-            "y": 142
+            "y": 148
           }
         },
         {
@@ -5064,12 +5187,12 @@
               "sort": "desc"
             }
           },
-          "id": 73,
+          "id": 75,
           "gridPos": {
             "h": 8,
             "w": 24,
             "x": 0,
-            "y": 147
+            "y": 153
           }
         }
       ]
@@ -5078,12 +5201,12 @@
       "type": "row",
       "title": "Hosts (host_info)",
       "collapsed": true,
-      "id": 74,
+      "id": 76,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 155
+        "y": 161
       },
       "panels": [
         {
@@ -5141,12 +5264,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 75,
+          "id": 77,
           "gridPos": {
             "h": 8,
             "w": 4,
             "x": 0,
-            "y": 156
+            "y": 162
           }
         },
         {
@@ -5203,12 +5326,12 @@
               "sort": "desc"
             }
           },
-          "id": 76,
+          "id": 78,
           "gridPos": {
             "h": 8,
             "w": 20,
             "x": 4,
-            "y": 156
+            "y": 162
           }
         },
         {
@@ -5361,12 +5484,12 @@
               }
             }
           ],
-          "id": 77,
+          "id": 79,
           "gridPos": {
             "h": 10,
             "w": 24,
             "x": 0,
-            "y": 164
+            "y": 170
           }
         }
       ]
@@ -5375,12 +5498,12 @@
       "type": "row",
       "title": "Smart home",
       "collapsed": true,
-      "id": 78,
+      "id": 80,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 174
+        "y": 180
       },
       "panels": [
         {
@@ -5446,12 +5569,12 @@
               "sort": "desc"
             }
           },
-          "id": 79,
+          "id": 81,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 175
+            "y": 181
           }
         },
         {
@@ -5557,12 +5680,12 @@
               "sort": "desc"
             }
           },
-          "id": 80,
+          "id": 82,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 12,
-            "y": 175
+            "y": 181
           }
         },
         {
@@ -5618,12 +5741,12 @@
               "sort": "desc"
             }
           },
-          "id": 81,
+          "id": 83,
           "gridPos": {
             "h": 7,
             "w": 12,
             "x": 0,
-            "y": 182
+            "y": 188
           }
         },
         {
@@ -5681,12 +5804,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 82,
+          "id": 84,
           "gridPos": {
             "h": 7,
             "w": 6,
             "x": 12,
-            "y": 182
+            "y": 188
           }
         },
         {
@@ -5753,12 +5876,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 83,
+          "id": 85,
           "gridPos": {
             "h": 7,
             "w": 6,
             "x": 18,
-            "y": 182
+            "y": 188
           }
         },
         {
@@ -5837,12 +5960,12 @@
               "showLegend": false
             }
           },
-          "id": 84,
+          "id": 86,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 0,
-            "y": 189
+            "y": 195
           }
         },
         {
@@ -6124,12 +6247,12 @@
               }
             }
           ],
-          "id": 85,
+          "id": 87,
           "gridPos": {
             "h": 6,
             "w": 12,
             "x": 12,
-            "y": 189
+            "y": 195
           }
         }
       ]
@@ -6138,12 +6261,12 @@
       "type": "row",
       "title": "Provider management (TR-069, USP)",
       "collapsed": true,
-      "id": 86,
+      "id": 88,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 195
+        "y": 201
       },
       "panels": [
         {
@@ -6203,12 +6326,12 @@
               }
             }
           ],
-          "id": 87,
+          "id": 89,
           "gridPos": {
             "h": 4,
             "w": 8,
             "x": 0,
-            "y": 196
+            "y": 202
           }
         },
         {
@@ -6283,12 +6406,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 88,
+          "id": 90,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 196
+            "y": 202
           }
         },
         {
@@ -6347,12 +6470,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 89,
+          "id": 91,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 196
+            "y": 202
           }
         },
         {
@@ -6427,12 +6550,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 90,
+          "id": 92,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 16,
-            "y": 196
+            "y": 202
           }
         },
         {
@@ -6518,12 +6641,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 91,
+          "id": 93,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 20,
-            "y": 196
+            "y": 202
           }
         }
       ]

@@ -33,6 +33,7 @@ from tests.fc_services_mock import (
 from tests.test_fritz_docsis import DOCSIS_RAW
 from tests.test_fritz_dsl import DSL_STAT_RAW
 from tests.test_fritz_rest_api import CONNECTIONS_RAW, SEGMENT_RAW
+from tests.test_fritz_wifi_environment import WIFI_ENVIRONMENT_RAW
 from tests.web_replies import web_reply
 
 START = time.time()
@@ -151,6 +152,15 @@ def _dsl() -> dict:
     return raw
 
 
+def _wifi_environment() -> dict:
+    raw: Any = copy.deepcopy(WIFI_ENVIRONMENT_RAW)
+    for band in ("24ghz", "5ghz", "6ghz"):
+        busy = _wobble(20, band, 0.5)
+        own = _wobble(busy / 3, band + "own", 0.5)
+        raw["data"][band]["airtimedata"] = f"0,1,1,{busy:.0f}:{own:.0f}"
+    return raw
+
+
 def _segment() -> dict:
     raw: Any = copy.deepcopy(SEGMENT_RAW)
     raw["lastSampleTime"] = int(time.time()) // 60 * 60
@@ -247,9 +257,10 @@ def _fiber() -> dict:
 def _webui() -> MagicMock:
     client = MagicMock()
     client.fetch_aha.side_effect = lambda *_a, **_k: _aha()
-    client.fetch_page.side_effect = lambda page: {
+    client.fetch_page.side_effect = lambda page, **_: {
         "docInfo": _docsis,
         "dslStat": _dsl,
+        "chan": _wifi_environment,
     }.get(page, _fiber)()
     client.fetch_api.side_effect = lambda path: _segment() if "segment" in path else CONNECTIONS_RAW
     return client

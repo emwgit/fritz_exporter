@@ -120,8 +120,8 @@ Ports, TLS and remote access
 ----------------------------
 
 The exporter talks to two interfaces on the device: TR-064 for most metrics, and
-the web interface for smart home (AHA), DOCSIS, DSL line, fibre and REST API metrics. Which ports
-it uses depends on ``use_tls``, ``port`` and ``remote_access``:
+the web interface for smart home (AHA), DOCSIS, DSL line, WiFi airtime, fibre and REST API
+metrics. Which ports it uses depends on ``use_tls``, ``port`` and ``remote_access``:
 
 +----------------------------------+---------------------------+---------------------------+
 | Mode                             | TR-064                    | Web interface             |
@@ -153,8 +153,8 @@ only offers an MD5 login. Anyone who can read the traffic between exporter and
 device can recover the password from an MD5 login, and on a hostile network can
 make a newer device ask for one. The exporter therefore refuses the MD5 login by
 default: when a device asks for it, the exporter logs an error and reads no more
-web interface metrics (smart home, DOCSIS, DSL line, fibre, REST API) from that device until
-it is restarted. Its TR-064 metrics and all other devices keep working;
+web interface metrics (smart home, DOCSIS, DSL line, WiFi airtime, fibre, REST API) from that
+device until it is restarted. Its TR-064 metrics and all other devices keep working;
 ``fritz_read_problem{level="skipped"}`` shows the metric groups left out.
 
 Upgrade Fritz!OS if you can. If you cannot, set ``allow_unsafe_md5_password: true``
