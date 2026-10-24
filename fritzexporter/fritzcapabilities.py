@@ -35,6 +35,11 @@ from fritzexporter.fritz_rest_generic import (
     parse_monitor_segment,
 )
 from fritzexporter.fritz_webui import FritzWebUiClient, FritzWebUiError
+from fritzexporter.fritz_wifi_environment import (
+    WIFI_ENVIRONMENT_PAGE,
+    WIFI_ENVIRONMENT_PARAMETERS,
+    parse_wifi_environment_response,
+)
 from fritzexporter.reply import DataError, Issues, Reply, read_action
 from fritzexporter.tr064_remote import TRANSPORT_ERRORS, transport_failure_text
 
@@ -1222,6 +1227,51 @@ class WlanAssociatedDevices(FritzCapability):
                 # A client may not have an address yet.
                 address = info.text("NewAssociatedDeviceIPAddress", "")
                 self._add("info", [*labels, WIFI_NAMES[index], address], 1)
+
+
+class WlanEnvironment(FritzCapability):
+    """WiFi airtime and neighbouring networks from the web interface.
+
+    TR-064 has neither. The channel overview page ``data.lua?page=chan`` gives, per
+    band, the airtime in use and the networks of others the last scan found.
+    """
+
+    uses_webui = True
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.requirements.append(("WLANConfiguration1", "GetInfo"))
+
+    def create_metrics(self) -> None:
+        self._gauge(
+            "airtime",
+            "fritz_wifi_airtime_ratio",
+            "Share of the time the WiFi channel is in use, mean of the last minute; the "
+            "Fritz!Box does not document what receive and transmit are",
+            "wifi_name",
+            "direction",
+            unit="ratio",
+        )
+        self._gauge(
+            "neighbours",
+            "fritz_wifi_neighbor_networks",
+            "Networks of others the last scan found, on the channel of the band "
+            "(same_channel) or on other channels (other_channels)",
+            "wifi_name",
+            "relation",
+        )
+
+    def _generate_metric_values(self, device: FritzDevice) -> None:
+        bands = parse_wifi_environment_response(
+            self._webui(device).fetch_page(WIFI_ENVIRONMENT_PAGE, **WIFI_ENVIRONMENT_PARAMETERS),
+            self.issues,
+        )
+        for band in bands:
+            labels = [device.serial, device.friendly_name, band["name"]]
+            self._add("airtime", [*labels, "rx"], band["airtime_receive"])
+            self._add("airtime", [*labels, "tx"], band["airtime_transmit"])
+            self._add("neighbours", [*labels, "same_channel"], band["neighbours_same_channel"])
+            self._add("neighbours", [*labels, "other_channels"], band["neighbours_other_channels"])
 
 
 class _MeshLink(NamedTuple):
