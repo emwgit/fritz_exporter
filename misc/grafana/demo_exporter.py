@@ -32,6 +32,7 @@ from tests.fc_services_mock import (
 )
 from tests.test_fritz_docsis import DOCSIS_RAW
 from tests.test_fritz_rest_api import CONNECTIONS_RAW, SEGMENT_RAW
+from tests.test_fritz_wifi_environment import WIFI_ENVIRONMENT_RAW
 from tests.web_replies import web_reply
 
 START = time.time()
@@ -141,6 +142,15 @@ def _docsis() -> dict:
     return raw
 
 
+def _wifi_environment() -> dict:
+    raw: Any = copy.deepcopy(WIFI_ENVIRONMENT_RAW)
+    for band in ("24ghz", "5ghz", "6ghz"):
+        busy = _wobble(20, band, 0.5)
+        own = _wobble(busy / 3, band + "own", 0.5)
+        raw["data"][band]["airtimedata"] = f"0,1,1,{busy:.0f}:{own:.0f}"
+    return raw
+
+
 def _segment() -> dict:
     raw: Any = copy.deepcopy(SEGMENT_RAW)
     raw["lastSampleTime"] = int(time.time()) // 60 * 60
@@ -225,19 +235,22 @@ def _mesh_topology() -> dict:
     }
 
 
+def _fiber() -> dict:
+    return {
+        "data": {
+            "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
+            "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
+        }
+    }
+
+
 def _webui() -> MagicMock:
     client = MagicMock()
     client.fetch_aha.side_effect = lambda *_a, **_k: _aha()
-    client.fetch_page.side_effect = lambda page: (
-        _docsis()
-        if page == "docInfo"
-        else {
-            "data": {
-                "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
-                "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
-            }
-        }
-    )
+    client.fetch_page.side_effect = lambda page, **_: {
+        "docInfo": _docsis,
+        "chan": _wifi_environment,
+    }.get(page, _fiber)()
     client.fetch_api.side_effect = lambda path: _segment() if "segment" in path else CONNECTIONS_RAW
     return client
 
