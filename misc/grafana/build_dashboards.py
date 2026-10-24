@@ -951,12 +951,19 @@ def overview() -> dict:  # noqa: PLR0915
         timeseries(
             "Errored seconds",
             targets(
-                (q("fritz_dsl_errored_seconds"), "errored {{direction}}"),
-                (q("fritz_dsl_severely_errored_seconds"), "severely errored {{direction}}"),
+                (
+                    f"increase({q('fritz_dsl_errored_seconds_total')}[$__interval])",
+                    "errored {{direction}}",
+                ),
+                (
+                    f"increase({q('fritz_dsl_severely_errored_seconds_total')}[$__interval])",
+                    "severely errored {{direction}}",
+                ),
             ),
             unit="s",
             soft_min=0,
-            description="As counted by the Fritz!Box; it does not document the period.",
+            description="Seconds added per interval to the counters of the Fritz!Box, which "
+            "does not document their starting point.",
         ),
         12,
         5,

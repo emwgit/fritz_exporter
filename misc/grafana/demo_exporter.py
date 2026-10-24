@@ -49,6 +49,10 @@ def _elapsed() -> float:
     return time.time() - START
 
 
+# Rows of the errored seconds on the dslStat page and the seconds per added second.
+ERRORED_SECOND_ROWS = {"Fehlern (ES)": 900, "Fehlern (SES)": 18_000}
+
+
 def _wobble(value: float, seed: str, amount: float = 0.15) -> float:
     phase = (hash(seed) % 1000) / 1000 * 2 * math.pi
     return value * (1 + amount * math.sin(_elapsed() / 120 + phase))
@@ -148,6 +152,9 @@ def _dsl() -> dict:
         for value in row.get("val", []):
             for key in ("us", "ds"):
                 value[key] = f"{_wobble(float(value[key]) + 1, row['title'] + key, 0.5):.1f}"
+        if row.get("title") in ERRORED_SECOND_ROWS:
+            divisor = ERRORED_SECOND_ROWS[row["title"]]
+            row["val"][0]["ds"] = str(int(time.time()) // divisor)
     return raw
 
 
