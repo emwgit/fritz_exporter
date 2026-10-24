@@ -947,6 +947,63 @@ def overview() -> dict:  # noqa: PLR0915
         12,
         5,
     )
+    lay.add(
+        timeseries(
+            "Errored seconds",
+            targets(
+                (q("fritz_dsl_errored_seconds"), "errored {{direction}}"),
+                (q("fritz_dsl_severely_errored_seconds"), "severely errored {{direction}}"),
+            ),
+            unit="s",
+            soft_min=0,
+            description="As counted by the Fritz!Box; it does not document the period.",
+        ),
+        12,
+        5,
+    )
+    lay.add(
+        timeseries(
+            "Corrected DTUs, last 15 minutes",
+            targets((q("fritz_dsl_corrected_dtus", window="15_minutes"), "{{direction}}")),
+            description="Data units the line retransmitted (G.INP) and so recovered. The value "
+            'per minute is in fritz_dsl_corrected_dtus{window="minute"}.',
+        ),
+        12,
+        5,
+    )
+    lay.add(
+        timeseries(
+            "CRC errors, last 15 minutes",
+            targets((q("fritz_dsl_crc_errors", window="15_minutes"), "{{direction}}")),
+            description='The value per minute is in fritz_dsl_crc_errors{window="minute"}.',
+        ),
+        8,
+        5,
+    )
+    lay.add(
+        timeseries(
+            "Uncorrected DTUs, last 15 minutes",
+            targets((q("fritz_dsl_uncorrected_dtus", window="15_minutes"), "{{direction}}")),
+            description="Data units that could not be recovered. The value per minute is in "
+            'fritz_dsl_uncorrected_dtus{window="minute"}.',
+        ),
+        8,
+        5,
+    )
+    lay.add(
+        stat("Line length", [target(q("fritz_dsl_line_length_meters"))], unit="lengthm"),
+        4,
+        5,
+    )
+    lay.add(
+        label_stat(
+            "Line profile",
+            q("fritz_dsl_line_info"),
+            "{{profile}}, vectoring {{vectoring_rx}}/{{vectoring_tx}}, carrier set {{carrier_set}}",
+        ),
+        4,
+        5,
+    )
 
     lay.row_start("Cable (DOCSIS)", collapsed=True)
     for direction in ("downstream", "upstream"):
