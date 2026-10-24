@@ -225,19 +225,40 @@ def _mesh_topology() -> dict:
     }
 
 
+def _net_moni() -> dict:
+    def samples(base: float, seed: str) -> list[int]:
+        return [int(_wobble(base, f"{seed}{index}", 0.5)) for index in range(20)]
+
+    group = {
+        "name": "sync_dsl",
+        "us_realtime_bps_curr": samples(20_000, "realtime"),
+        "us_important_bps_curr": samples(5_000, "important"),
+        "us_default_bps_curr": samples(150_000, "default"),
+        "us_background_bps_curr": samples(40_000, "background"),
+        "ds_bps_curr": samples(900_000, "internet"),
+        "ds_mc_bps_curr": samples(300_000, "multicast"),
+        "ds_guest_bps_curr": samples(2_000, "guest"),
+        "guest_us_bps": samples(500, "guestup")[:1],
+    }
+    return {"data": {"sync_groups": [group]}}
+
+
+def _fiber() -> dict:
+    return {
+        "data": {
+            "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
+            "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
+        }
+    }
+
+
 def _webui() -> MagicMock:
     client = MagicMock()
     client.fetch_aha.side_effect = lambda *_a, **_k: _aha()
-    client.fetch_page.side_effect = lambda page: (
-        _docsis()
-        if page == "docInfo"
-        else {
-            "data": {
-                "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
-                "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
-            }
-        }
-    )
+    client.fetch_page.side_effect = lambda page, **_: {
+        "docInfo": _docsis,
+        "netMoni": _net_moni,
+    }.get(page, _fiber)()
     client.fetch_api.side_effect = lambda path: _segment() if "segment" in path else CONNECTIONS_RAW
     return client
 
