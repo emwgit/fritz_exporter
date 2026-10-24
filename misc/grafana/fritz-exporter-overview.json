@@ -5368,6 +5368,67 @@
           }
         },
         {
+          "type": "timeseries",
+          "title": "Current",
+          "description": "",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "fritz_ha_multimeter_current_A{friendly_name=\"$device\"}",
+              "refId": "A",
+              "legendFormat": "{{device_name}}"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "custom": {
+                "drawStyle": "line",
+                "lineWidth": 2,
+                "fillOpacity": 30,
+                "gradientMode": "opacity",
+                "showPoints": "never",
+                "spanNulls": true,
+                "axisSoftMin": null,
+                "stacking": {
+                  "mode": "none",
+                  "group": "A"
+                }
+              },
+              "color": {
+                "mode": "palette-classic"
+              },
+              "unit": "amp"
+            },
+            "overrides": []
+          },
+          "options": {
+            "legend": {
+              "displayMode": "list",
+              "placement": "bottom",
+              "calcs": [],
+              "showLegend": true
+            },
+            "tooltip": {
+              "mode": "multi",
+              "sort": "desc"
+            }
+          },
+          "id": 78,
+          "gridPos": {
+            "h": 7,
+            "w": 12,
+            "x": 12,
+            "y": 179
+          }
+        },
+        {
           "type": "bargauge",
           "title": "Energy in the selected time range",
           "description": "",
@@ -5422,12 +5483,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 78,
+          "id": 79,
           "gridPos": {
             "h": 7,
             "w": 6,
-            "x": 12,
-            "y": 179
+            "x": 0,
+            "y": 186
           }
         },
         {
@@ -5494,12 +5555,12 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 79,
+          "id": 80,
           "gridPos": {
             "h": 7,
             "w": 6,
-            "x": 18,
-            "y": 179
+            "x": 6,
+            "y": 186
           }
         },
         {
@@ -5578,11 +5639,11 @@
               "showLegend": false
             }
           },
-          "id": 80,
+          "id": 81,
           "gridPos": {
             "h": 6,
             "w": 12,
-            "x": 0,
+            "x": 12,
             "y": 186
           }
         },
@@ -5994,12 +6055,12 @@
               }
             }
           ],
-          "id": 81,
+          "id": 82,
           "gridPos": {
             "h": 6,
             "w": 12,
-            "x": 12,
-            "y": 186
+            "x": 0,
+            "y": 193
           }
         }
       ]
@@ -6008,12 +6069,12 @@
       "type": "row",
       "title": "Provider management (TR-069, USP)",
       "collapsed": true,
-      "id": 82,
+      "id": 83,
       "gridPos": {
         "h": 1,
         "w": 24,
         "x": 0,
-        "y": 192
+        "y": 199
       },
       "panels": [
         {
@@ -6073,12 +6134,12 @@
               }
             }
           ],
-          "id": 83,
+          "id": 84,
           "gridPos": {
             "h": 4,
             "w": 8,
             "x": 0,
-            "y": 193
+            "y": 200
           }
         },
         {
@@ -6153,12 +6214,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 84,
+          "id": 85,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 8,
-            "y": 193
+            "y": 200
           }
         },
         {
@@ -6217,12 +6278,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 85,
+          "id": 86,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 12,
-            "y": 193
+            "y": 200
           }
         },
         {
@@ -6297,12 +6358,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 86,
+          "id": 87,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 16,
-            "y": 193
+            "y": 200
           }
         },
         {
@@ -6388,12 +6449,12 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 87,
+          "id": 88,
           "gridPos": {
             "h": 4,
             "w": 4,
             "x": 20,
-            "y": 193
+            "y": 200
           }
         }
       ]

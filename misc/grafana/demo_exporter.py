@@ -154,15 +154,35 @@ def _segment() -> dict:
     return raw
 
 
+# (name, AIN, has a heater, has a power meter)
+AHA_DEVICES = [
+    ("Living room", "087610000001", True, True),
+    ("Bedroom", "087610000002", True, False),
+    ("Washing machine", "116570000003", False, True),
+    ("Cellar", "087610000004", False, False),
+]
+
+
+def _plug_power_and_voltage(name: str) -> tuple[int, int]:
+    """The power in mW and the voltage in mV of a socket."""
+    return int(_wobble(45000, name, 0.9)), int(_wobble(234000, name + "voltage", 0.01))
+
+
+def _smart_home() -> dict:
+    """The page sh: the devices with the electric current of the sockets."""
+    devices = []
+    for name, ain, _heater, plug in AHA_DEVICES:
+        if not plug:
+            continue
+        power, voltage = _plug_power_and_voltage(name)
+        multimeter = {"type": "SmartHomeMultimeter", "electricCurrentInAmpere": power / voltage}
+        devices.append({"actorIdentificationNumber": ain, "units": [{"skills": [multimeter]}]})
+    return {"data": {"devices": devices}}
+
+
 def _aha() -> str:
-    devices = [
-        ("Living room", "087610000001", True, True),
-        ("Bedroom", "087610000002", True, False),
-        ("Washing machine", "116570000003", False, True),
-        ("Cellar", "087610000004", False, False),
-    ]
     parts = []
-    for name, ain, heater, plug in devices:
+    for name, ain, heater, plug in AHA_DEVICES:
         celsius = int(_wobble(215, name, 0.08))
         product = "FRITZ!DECT 301" if heater else "FRITZ!DECT 200"
         xml = [
@@ -184,9 +204,8 @@ def _aha() -> str:
                 "<summeractive>0</summeractive><holidayactive>0</holidayactive></hkr>"
             )
         if plug:
-            power = int(_wobble(45000, name, 0.9))
+            power, voltage = _plug_power_and_voltage(name)
             energy = int(12345 + _elapsed() / 10)
-            voltage = int(_wobble(234000, name + "voltage", 0.01))
             xml.append(
                 f"<powermeter><power>{power}</power><energy>{energy}</energy>"
                 f"<voltage>{voltage}</voltage></powermeter>"
@@ -243,16 +262,14 @@ def _mesh_topology() -> dict:
 def _webui() -> MagicMock:
     client = MagicMock()
     client.fetch_aha.side_effect = lambda *_a, **_k: _aha()
-    client.fetch_page.side_effect = lambda page: (
-        _docsis()
-        if page == "docInfo"
-        else {
-            "data": {
-                "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
-                "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
-            }
+    fibre = {
+        "data": {
+            "opt_ds": [["sa", 9, int(_wobble(-65, "ds", 0.1))]],
+            "opt_us": [["sa", 9, int(_wobble(-54, "us", 0.1))]],
         }
-    )
+    }
+    pages = {"docInfo": _docsis, "sh": _smart_home}
+    client.fetch_page.side_effect = lambda page: pages.get(page, lambda: fibre)()
     client.fetch_api.side_effect = lambda path: _segment() if "segment" in path else CONNECTIONS_RAW
     return client
 

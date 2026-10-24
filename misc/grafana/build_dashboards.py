@@ -1385,6 +1385,16 @@ def overview() -> dict:  # noqa: PLR0915
         7,
     )
     lay.add(
+        timeseries(
+            "Current",
+            targets((q("fritz_ha_multimeter_current_A"), ha_name)),
+            unit="amp",
+            fill=30,
+        ),
+        12,
+        7,
+    )
+    lay.add(
         bars(
             "Energy in the selected time range",
             [
