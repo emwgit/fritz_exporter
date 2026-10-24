@@ -52,6 +52,10 @@ def _elapsed() -> float:
     return time.time() - START
 
 
+# A wobbling value of 1 (0 to 2) above this means "window open" for part of the time.
+WINDOW_OPEN_ABOVE = 1.3
+
+
 def _wobble(value: float, seed: str, amount: float = 0.15) -> float:
     phase = (hash(seed) % 1000) / 1000 * 2 * math.pi
     return value * (1 + amount * math.sin(_elapsed() / 120 + phase))
@@ -172,14 +176,35 @@ def _segment() -> dict:
     return raw
 
 
+# (name, AIN, has a heater, has a power meter)
+AHA_DEVICES = [
+    ("Living room", "087610000001", True, True),
+    ("Bedroom", "087610000002", True, False),
+    ("Washing machine", "116570000003", False, True),
+    ("Cellar", "087610000004", False, False),
+]
+
+
+def _plug_power_and_voltage(name: str) -> tuple[int, int]:
+    """The power in mW and the voltage in mV of a socket."""
+    return int(_wobble(45000, name, 0.9)), int(_wobble(234000, name + "voltage", 0.01))
+
+
+def _smart_home() -> dict:
+    """The page sh: the devices with the electric current of the sockets."""
+    devices = []
+    for name, ain, _heater, plug in AHA_DEVICES:
+        if not plug:
+            continue
+        power, voltage = _plug_power_and_voltage(name)
+        multimeter = {"type": "SmartHomeMultimeter", "electricCurrentInAmpere": power / voltage}
+        devices.append({"actorIdentificationNumber": ain, "units": [{"skills": [multimeter]}]})
+    return {"data": {"devices": devices}}
+
+
 def _aha() -> str:
-    devices = [
-        ("Living room", "087610000001", True, True),
-        ("Bedroom", "087610000002", True, False),
-        ("Washing machine", "116570000003", False, True),
-    ]
     parts = []
-    for name, ain, heater, plug in devices:
+    for name, ain, heater, plug in AHA_DEVICES:
         celsius = int(_wobble(215, name, 0.08))
         product = "FRITZ!DECT 301" if heater else "FRITZ!DECT 200"
         xml = [
@@ -195,13 +220,22 @@ def _aha() -> str:
             xml.append("<battery>80</battery><batterylow>0</batterylow>")
             xml.append(
                 f"<hkr><tist>{celsius // 5}</tist><tsoll>42</tsoll>"
-                "<absenk>34</absenk><komfort>42</komfort></hkr>"
+                "<absenk>34</absenk><komfort>42</komfort>"
+                f"<windowopenactiv>{int(_wobble(1, name + 'window', 1.0) > WINDOW_OPEN_ABOVE)}"
+                "</windowopenactiv>"
+                "<summeractive>0</summeractive><holidayactive>0</holidayactive></hkr>"
             )
         if plug:
-            power = int(_wobble(45000, name, 0.9))
+            power, voltage = _plug_power_and_voltage(name)
             energy = int(12345 + _elapsed() / 10)
-            xml.append(f"<powermeter><power>{power}</power><energy>{energy}</energy></powermeter>")
+            xml.append(
+                f"<powermeter><power>{power}</power><energy>{energy}</energy>"
+                f"<voltage>{voltage}</voltage></powermeter>"
+            )
             xml.append("<switch><state>1</state><mode>manuell</mode><lock>0</lock></switch>")
+        if not heater and not plug:
+            humidity = int(_wobble(50, name + "humidity", 0.2))
+            xml.append(f"<humidity><rel_humidity>{humidity}</rel_humidity></humidity>")
         xml.append("</device>")
         parts.append("".join(xml))
     return f'<devicelist version="1">{"".join(parts)}</devicelist>'
@@ -302,6 +336,7 @@ def _webui() -> MagicMock:
         "chan": _wifi_environment,
         "netMoni": _net_moni,
         "netDev": _net_dev,
+        "sh": _smart_home,
     }.get(page, _fiber)()
     client.fetch_api.side_effect = lambda path: _segment() if "segment" in path else CONNECTIONS_RAW
     return client

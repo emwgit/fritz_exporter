@@ -36,6 +36,7 @@ from fritzexporter.fritz_rest_generic import (
     parse_connections_response,
     parse_monitor_segment,
 )
+from fritzexporter.fritz_smart_home import SMART_HOME_PAGE, parse_smart_home_currents
 from fritzexporter.fritz_wan_qos import WAN_QOS_PAGE, WAN_QOS_PARAMETERS, parse_wan_qos_response
 from fritzexporter.fritz_webui import FritzWebUiClient, FritzWebUiError
 from fritzexporter.fritz_wifi_environment import (
@@ -1774,6 +1775,9 @@ class HomeAutomation(FritzCapability):
             ("battery_low", "fritz_ha_battery_low", "Indicates that the battery is low"),
             ("multimeter_power", "fritz_ha_multimeter_power_W", "Power in W"),
             ("multimeter_energy", "fritz_ha_multimeter_energy_Wh", "Energy in Wh"),
+            ("multimeter_voltage", "fritz_ha_multimeter_voltage_V", "Voltage in V"),
+            ("multimeter_current", "fritz_ha_multimeter_current_A", "Current in A"),
+            ("humidity", "fritz_ha_humidity_percent", "Relative humidity in percent"),
             ("temperature", "fritz_ha_temperature_C", "Temperature in °C"),
             (
                 "temperature_offset",
@@ -1818,6 +1822,21 @@ class HomeAutomation(FritzCapability):
                 "fritz_ha_heater_comfort_valve_state",
                 "Heater comfort valve state",
             ),
+            (
+                "heater_window_open",
+                "fritz_ha_heater_window_open",
+                "Indicates that the heater detected an open window",
+            ),
+            (
+                "heater_summer_active",
+                "fritz_ha_heater_summer_active",
+                "Indicates that the heater is in its summer period",
+            ),
+            (
+                "heater_holiday_active",
+                "fritz_ha_heater_holiday_active",
+                "Indicates that the heater is in its holiday period",
+            ),
         ]
         for key, metric_name, help_text in metric_definitions:
             self._gauge(key, metric_name, help_text, *self._HA_LABELS)
@@ -1839,6 +1858,23 @@ class HomeAutomation(FritzCapability):
             return
         self._add("multimeter_power", labels, _div(powermeter["power"], 1000))
         self._add("multimeter_energy", labels, powermeter["energy"])
+        self._add("multimeter_voltage", labels, _div(powermeter["voltage"], 1000))
+
+    def _collect_currents(self, device: FritzDevice, labels_by_ain: dict[str, list[str]]) -> None:
+        # The AHA device list has no current: it is only on the web UI page "sh".
+        # A failure there must not cost the other smart home metrics.
+        try:
+            currents = parse_smart_home_currents(
+                self._webui(device).fetch_page(SMART_HOME_PAGE), self.issues
+            )
+        except (FritzWebUiError, DataError) as e:
+            self.issues.messages.append(f"electric current from the web interface skipped: {e}")
+            return
+        for ain, labels in labels_by_ain.items():
+            self._add("multimeter_current", labels, currents.get(ain))
+
+    def _collect_humidity(self, ha_device: AhaDevice, labels: list[str]) -> None:
+        self._add("humidity", labels, ha_device["humidity"])
 
     def _collect_temperature(self, ha_device: AhaDevice, labels: list[str]) -> None:
         temperature = ha_device["temperature"]
@@ -1867,6 +1903,9 @@ class HomeAutomation(FritzCapability):
         self._add("heater_set_temperature", labels, _hkr_setting(hkr["tsoll"]))
         self._add("heater_reduced_temperature", labels, _hkr_setting(hkr["absenk"]))
         self._add("heater_comfort_temperature", labels, _hkr_setting(hkr["komfort"]))
+        self._add("heater_window_open", labels, hkr["window_open"])
+        self._add("heater_summer_active", labels, hkr["summer_active"])
+        self._add("heater_holiday_active", labels, hkr["holiday_active"])
 
     def _collect_heater_valve_state(
         self, device: FritzDevice, ain: str, what: str, labels: list[str]
@@ -1903,14 +1942,18 @@ class HomeAutomation(FritzCapability):
         # The AHA interface is part of the web UI, not TR-064: use the web UI
         # client, which targets the right port for local TLS and remote access.
         devicelist_xml = self._webui(device).fetch_aha("getdevicelistinfos")
+        metered: dict[str, list[str]] = {}
         for index, ha_device in enumerate(parse_aha_devicelist_xml(devicelist_xml, self.issues)):
             labels = self._build_ha_labels(device, ha_device)
+            if ha_device["powermeter"] is not None:
+                metered[ha_device["ain"]] = labels
 
             # 2 for present, not 1: what the exporter has always sent, and what
             # dashboards and alerts compare with.
             self._add("devicepresent", labels, 2 if ha_device["present"] else 0)
             self._collect_multimeter(ha_device, labels)
             self._collect_temperature(ha_device, labels)
+            self._collect_humidity(ha_device, labels)
             self._collect_switch(ha_device, labels)
             self._collect_heater(ha_device, labels)
             self._collect_battery(ha_device, labels)
@@ -1919,6 +1962,8 @@ class HomeAutomation(FritzCapability):
                 what = f"smart home device {index}"
                 with self._item(f"valve state of {what}"):
                     self._collect_heater_valve_state(device, ha_device["ain"], what, labels)
+        if metered:
+            self._collect_currents(device, metered)
 
 
 class WanDocsisCable(FritzCapability):

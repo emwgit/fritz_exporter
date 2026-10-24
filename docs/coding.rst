@@ -30,6 +30,7 @@ A quick orientation before diving in:
       fritz_wifi_environment.py – Parser for the WiFi airtime and neighbouring networks (chan)
       fritz_wan_qos.py      – Parser for the WAN throughput per QoS class (netMoni)
       fritz_net_devices.py  – Parser for the WiFi link speeds of the network overview (netDev)
+      fritz_smart_home.py   – Parser for the socket current of the smart home page (sh)
       fritz_rest_generic.py – Parsers for REST API connections and segment monitor
       exceptions.py         – Top-level exceptions
       config/
@@ -392,13 +393,13 @@ the MD5 login, which is not allowed for it, gets no web interface requests until
 exporter is restarted.
 
 **fritz_aha.py, fritz_docsis.py, fritz_dsl.py, fritz_fiber.py, fritz_net_devices.py,
-fritz_rest_generic.py, fritz_wan_qos.py, fritz_wifi_environment.py**
+fritz_rest_generic.py, fritz_smart_home.py, fritz_wan_qos.py, fritz_wifi_environment.py**
 
 Parsers for the web interface replies: the AHA device list (XML, via ``defusedxml``),
 the DOCSIS channel page, the DSL error counter page, the fibre optical level history,
-the WAN throughput per QoS class, the WiFi channel overview, the WiFi link speeds of the
-network overview and the REST API connection and segment monitor endpoints.  Each turns a
-raw reply into typed data through
+the smart home page with the current of the sockets, the WAN throughput per QoS class,
+the WiFi channel overview, the WiFi link speeds of the network overview and the REST API
+connection and segment monitor endpoints.  Each turns a raw reply into typed data through
 ``reply.py`` and takes an ``Issues`` collector, so a defective value or item is
 skipped and recorded instead of failing the whole capability.
 

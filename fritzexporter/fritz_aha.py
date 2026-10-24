@@ -23,6 +23,7 @@ class AhaSwitch(TypedDict):
 class AhaPowermeter(TypedDict):
     power: int | None  # mW
     energy: int | None  # Wh
+    voltage: int | None  # mV
 
 
 class AhaTemperature(TypedDict):
@@ -39,6 +40,9 @@ class AhaHeater(TypedDict):
     komfort: int | None
     battery_level: int | None
     battery_low: str | None
+    window_open: int | None  # 1 while the window-open detection is active
+    summer_active: int | None
+    holiday_active: int | None
 
 
 class AhaDevice(TypedDict):
@@ -53,6 +57,7 @@ class AhaDevice(TypedDict):
     switch: AhaSwitch | None
     powermeter: AhaPowermeter | None
     temperature: AhaTemperature | None
+    humidity: int | None  # percent
     hkr: AhaHeater | None
 
 
@@ -87,6 +92,7 @@ def _parse_powermeter(device: Element, issues: Issues, where: str) -> AhaPowerme
     return {
         "power": _find_int(powermeter, "power", issues, where),
         "energy": _find_int(powermeter, "energy", issues, where),
+        "voltage": _find_int(powermeter, "voltage", issues, where),
     }
 
 
@@ -111,7 +117,17 @@ def _parse_hkr(device: Element, issues: Issues, where: str) -> AhaHeater | None:
         "komfort": _find_int(hkr, "komfort", issues, where),
         "battery_level": _find_int(hkr, "battery", issues, where),
         "battery_low": _findtext(hkr, "batterylow"),
+        "window_open": _find_int(hkr, "windowopenactiv", issues, where),
+        "summer_active": _find_int(hkr, "summeractive", issues, where),
+        "holiday_active": _find_int(hkr, "holidayactive", issues, where),
     }
+
+
+def _parse_humidity(device: Element, issues: Issues, where: str) -> int | None:
+    humidity = device.find("humidity")
+    if humidity is None:
+        return None
+    return _find_int(humidity, "rel_humidity", issues, where)
 
 
 def parse_aha_devicelist_xml(content: str, issues: Issues) -> list[AhaDevice]:
@@ -153,6 +169,7 @@ def parse_aha_devicelist_xml(content: str, issues: Issues) -> list[AhaDevice]:
                 "switch": _parse_switch(device),
                 "powermeter": _parse_powermeter(device, issues, where),
                 "temperature": _parse_temperature(device, issues, where),
+                "humidity": _parse_humidity(device, issues, where),
                 "hkr": hkr,
             }
         )
