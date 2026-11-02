@@ -174,6 +174,8 @@ class FritzDevice:
         self.available: bool = True
         # Problems reading the connection mode; reported like a capability's.
         self.connection_mode_state = ProblemState()
+        # Both collection lanes use fc and its HTTP session; one thread at a time.
+        self.fc_lock: threading.Lock = threading.Lock()
 
         self.fc: FritzConnection = create_fritz_connection(
             address=creds.host,
