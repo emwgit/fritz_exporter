@@ -13,6 +13,7 @@ from fritzconnection.core.exceptions import (  # type: ignore[import]
 )
 from prometheus_client.core import CounterMetricFamily, GaugeMetricFamily
 from prometheus_client.registry import Collector
+from requests import Session
 from requests.exceptions import RequestException
 
 from fritzexporter.exceptions import (
@@ -32,6 +33,7 @@ from fritzexporter.tr064_remote import (
     TRANSPORT_ERRORS,
     ConnectionOptions,
     create_fritz_connection,
+    create_web_session,
     transport_failure_text,
 )
 
@@ -181,6 +183,8 @@ class FritzDevice:
             password=creds.password,
             connection=connection,
         )
+        # The mesh list is read over HTTP while the other lane makes TR-064 calls.
+        self.web_session: Session = create_web_session(self.fc, connection)
 
         self.get_device_info()
 

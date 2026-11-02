@@ -1884,10 +1884,12 @@ class TestMeshListFetch:
         fc = mock_fritzconnection.return_value
         fc.call_action.side_effect = call_with_mesh
         fc.services = create_fc_services(fc_services_devices["FritzBox 7590"])
-        fc.session.get.side_effect = get_error
-        fc.session.get.return_value = reply
         collector = FritzCollector()
-        collector.register(FritzDevice(FritzCredentials("somehost", "u", "p"), "FritzMock"))
+        device = FritzDevice(FritzCredentials("somehost", "u", "p"), "FritzMock")
+        device.web_session = MagicMock()  # the mesh list is read over the web session
+        device.web_session.get.side_effect = get_error
+        device.web_session.get.return_value = reply
+        collector.register(device)
         device_ready = True
         by_name = {m.name: m for m in collector.collect()}
         problems = {

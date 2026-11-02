@@ -1615,7 +1615,7 @@ class MeshTopology(FritzCapability):
             return None
         url = f"{device.fc.address}:{device.fc.port}{path}"
         try:
-            with device.fc.session.get(url) as response:
+            with device.web_session.get(url) as response:
                 # Only the mesh master serves the topology; other nodes answer
                 # 404 ("Device has no access to topology information").
                 if response.status_code == HTTPStatus.NOT_FOUND:

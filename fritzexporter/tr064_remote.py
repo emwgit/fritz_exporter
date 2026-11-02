@@ -19,6 +19,7 @@ import requests
 from attrs import define
 from fritzconnection import FritzConnection  # type: ignore[import]
 from fritzconnection.core.exceptions import FritzConnectionException  # type: ignore[import]
+from requests.auth import HTTPDigestAuth
 
 from fritzexporter.config.config import DEFAULT_CONNECTION_TIMEOUT
 
@@ -81,18 +82,12 @@ def transport_failure_text(error: Exception) -> str:
     return f"Fritz device did not answer ({type(error).__name__})"
 
 
-@contextmanager
-def fritz_connection_session(*, remote_access: bool, timeout: int | None) -> Generator[None]:
-    """Configure sessions created while initializing ``FritzConnection``.
+def connection_session_class(*, remote_access: bool, timeout: int | None) -> type[requests.Session]:
+    """A Session class for one device's connection (TR-064 or web interface).
 
-    FritzConnection creates its Session inside ``__init__`` before loading the
-    router API, so the subclass must be installed before FritzConnection runs.
-    Its AHA HTTP calls omit a timeout, unlike its TR-064 SOAP calls; add the
-    configured timeout to every request. A request that gets no answer raises
-    ``FritzUnreachableError``, so callers can tell it from an error the device
-    answered with.
+    It rewrites paths for WAN remote access, adds the configured timeout to every
+    request, and reports a request that gets no answer as ``FritzUnreachableError``.
     """
-    original_session = requests.Session
 
     class FritzConnectionSession(Tr064RemoteAccessSession):
         rewrite_paths = remote_access
@@ -112,7 +107,24 @@ def fritz_connection_session(*, remote_access: bool, timeout: int | None) -> Gen
                 msg = f"Fritz device did not answer ({type(err).__name__})"
                 raise FritzUnreachableError(msg) from err
 
-    requests.Session = FritzConnectionSession  # ty: ignore[invalid-assignment]
+    return FritzConnectionSession
+
+
+@contextmanager
+def fritz_connection_session(*, remote_access: bool, timeout: int | None) -> Generator[None]:
+    """Configure sessions created while initializing ``FritzConnection``.
+
+    FritzConnection creates its Session inside ``__init__`` before loading the
+    router API, so the subclass must be installed before FritzConnection runs.
+    Its AHA HTTP calls omit a timeout, unlike its TR-064 SOAP calls; add the
+    configured timeout to every request. A request that gets no answer raises
+    ``FritzUnreachableError``, so callers can tell it from an error the device
+    answered with.
+    """
+    original_session = requests.Session
+    requests.Session = connection_session_class(  # ty: ignore[invalid-assignment]
+        remote_access=remote_access, timeout=timeout
+    )
     try:
         yield
     finally:
@@ -174,3 +186,19 @@ def create_fritz_connection(
             # paths; fritzconnection then fails XML parse instead of a typed error.
             msg = f"Invalid TR-064 response from {address} (not XML): {err}"
             raise FritzConnectionException(msg) from err
+
+
+def create_web_session(fc: FritzConnection, connection: ConnectionOptions) -> requests.Session:
+    """A session for the web interface, with the login and TLS settings of ``fc``.
+
+    It shares no state with ``fc.session``, so a web request and a TR-064 request can
+    run at the same time. Its class, timeout and path handling match the connection's.
+    """
+    session = connection_session_class(
+        remote_access=connection.remote_access, timeout=connection.connection_timeout
+    )()
+    session.verify = fc.session.verify
+    auth = fc.session.auth
+    if isinstance(auth, HTTPDigestAuth):
+        session.auth = HTTPDigestAuth(auth.username, auth.password)
+    return session

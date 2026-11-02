@@ -1,12 +1,16 @@
 from unittest.mock import MagicMock, patch
 
+import pytest
 import requests
 from requests.adapters import HTTPAdapter
+from requests.auth import HTTPDigestAuth
 
 from fritzexporter.tr064_remote import (
     ConnectionOptions,
+    FritzUnreachableError,
     Tr064RemoteAccessSession,
     create_fritz_connection,
+    create_web_session,
     rewrite_tr064_remote_url,
 )
 
@@ -178,3 +182,46 @@ class TestCreateFritzConnection:
                 password="pass",
                 connection=options,
             )
+
+
+class TestCreateWebSession:
+    @staticmethod
+    def _fc() -> MagicMock:
+        fc = MagicMock()
+        fc.session = requests.Session()
+        fc.session.verify = False
+        fc.session.auth = HTTPDigestAuth("munin", "secret")
+        return fc
+
+    def test_is_a_session_of_its_own(self):
+        fc = self._fc()
+        web = create_web_session(fc, ConnectionOptions(connection_timeout=10))
+        assert web is not fc.session
+        assert web.auth is not fc.session.auth
+
+    def test_keeps_the_login_and_tls_settings(self):
+        web = create_web_session(self._fc(), ConnectionOptions(connection_timeout=10))
+        assert web.verify is False
+        assert isinstance(web.auth, HTTPDigestAuth)
+        assert (web.auth.username, web.auth.password) == ("munin", "secret")
+
+    def test_connection_timeout_applies(self):
+        web = create_web_session(self._fc(), ConnectionOptions(connection_timeout=10))
+        with patch.object(requests.Session, "request", return_value=MagicMock()) as request:
+            web.get("https://box.example/meshlist.lua")
+        assert request.call_args.kwargs["timeout"] == 10
+
+    def test_unanswered_request_is_unreachable(self):
+        web = create_web_session(self._fc(), ConnectionOptions(connection_timeout=10))
+        with (
+            patch.object(requests.Session, "request", side_effect=requests.ReadTimeout),
+            pytest.raises(FritzUnreachableError),
+        ):
+            web.get("https://box.example/meshlist.lua")
+
+    def test_remote_access_rewrites_the_path_like_the_connection(self):
+        options = ConnectionOptions(use_tls=True, port=11243, remote_access=True)
+        web = create_web_session(self._fc(), options)
+        with patch.object(requests.Session, "request", return_value=MagicMock()) as request:
+            web.get("https://box.example:11243/meshlist.lua")
+        assert request.call_args.args[1] == "https://box.example:11243/tr064/meshlist.lua"
