@@ -382,6 +382,7 @@ def demo_collector() -> FritzCollector:
                     FritzCredentials(host, "demo", "demo"),
                     name,
                     host_info=True,
+                    ignore_private_macs=True,
                     wifi_client_info=True,
                 )
             )

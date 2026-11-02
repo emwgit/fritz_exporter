@@ -36,6 +36,10 @@ If you only need a single device this is the easiest way to configure the export
 | ``FRITZ_HOST_INFO``                 | Enable extended information about all hosts (slow, | False     |
 |                                     | see the note below). Only "true" or "1" enable it. |           |
 +-------------------------------------+----------------------------------------------------+-----------+
+| ``FRITZ_IGNORE_PRIVATE_MACS``       | Leave unconnected hosts with a private MAC         | False     |
+|                                     | address out of the host metrics; see the note      |           |
+|                                     | below. Only "true" or "1" enable it.               |           |
++-------------------------------------+----------------------------------------------------+-----------+
 | ``FRITZ_WIFI_CLIENT_INFO``          | Enable per-client WiFi metrics (signal/speed).     | False     |
 |                                     | Only "true" or "1" will enable this feature.       |           |
 +-------------------------------------+----------------------------------------------------+-----------+
@@ -91,6 +95,7 @@ To use the config file you have to specify the location of the config and mount 
       username: prometheus
       password: prometheus
       host_info: True # optional, see below
+      ignore_private_macs: false # optional, see below
       wifi_client_info: True # optional, per-client WiFi signal/speed (higher cardinality)
       connection_timeout: 10 # optional, seconds; 0 disables timeout (default 10)
       use_tls: false # optional; true = HTTPS for TR-064 and the web interface
@@ -109,6 +114,10 @@ the error message names the device and the key.
 .. note::
 
   ``host_info: true`` (env: ``FRITZ_HOST_INFO``) collects extended information about every device known to your Fritz device, which can take a long time (20+ seconds). If you want it, set your Prometheus scrape interval and timeout to match.
+
+.. note::
+
+  ``ignore_private_macs: true`` (env: ``FRITZ_IGNORE_PRIVATE_MACS``, needs ``host_info``) leaves out of the host metrics the unconnected hosts that have a private (locally administered) MAC address, no IP address and an empty name or the default name ``PC-`` plus the MAC address. Such entries are usually devices that are no longer in use. They are skipped before their IP address lookup, so the exporter makes fewer requests. The number of hosts left out is exported as ``fritz_hosts_ignored``; that metric is absent while the option is off.
 
 .. note::
 

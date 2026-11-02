@@ -79,6 +79,7 @@ class DeviceSpec:
     creds: FritzCredentials
     name: str
     host_info: bool = False
+    ignore_private_macs: bool = False
     wifi_client_info: bool = False
     connection: ConnectionOptions = Factory(ConnectionOptions)
 
@@ -148,12 +149,13 @@ def _traceback(error: Exception) -> Exception | None:
 
 
 class FritzDevice:
-    def __init__(
+    def __init__(  # noqa: PLR0913
         self,
         creds: FritzCredentials,
         name: str,
         *,
         host_info: bool = False,
+        ignore_private_macs: bool = False,
         wifi_client_info: bool = False,
         connection: ConnectionOptions | None = None,
     ) -> None:
@@ -164,6 +166,7 @@ class FritzDevice:
         self.friendly_name: str = name
         self.log_name: str = device_log_name(name, creds.host)
         self.host_info: bool = host_info
+        self.ignore_private_macs: bool = ignore_private_macs
         self.wifi_client_info: bool = wifi_client_info
         self.webui_client: FritzWebUiClient | None = None
         self.available: bool = True
@@ -236,6 +239,7 @@ class FritzDevice:
             spec.creds,
             spec.name,
             host_info=spec.host_info,
+            ignore_private_macs=spec.ignore_private_macs,
             wifi_client_info=spec.wifi_client_info,
             connection=spec.connection,
         )

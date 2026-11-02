@@ -327,6 +327,12 @@ class TestEnvEmptyVsUnsetValues:
         with pytest.raises(ValueError, match="Cannot convert value to bool"):
             get_config(None)
 
+    def test_ignore_private_macs_empty_raises(self, monkeypatch):
+        monkeypatch.setenv("FRITZ_IGNORE_PRIVATE_MACS", "")
+
+        with pytest.raises(ValueError, match="Cannot convert value to bool"):
+            get_config(None)
+
     def test_wifi_client_info_empty_raises(self, monkeypatch):
         monkeypatch.setenv("FRITZ_WIFI_CLIENT_INFO", "")
 
@@ -553,6 +559,34 @@ class TestWifiClientInfoConfig:
         monkeypatch.setenv("FRITZ_WIFI_CLIENT_INFO", "true")
         config = get_config(None)
         assert config.devices[0].wifi_client_info is True
+
+
+class TestIgnorePrivateMacsConfig:
+    def test_ignore_private_macs_from_config_dict(self):
+        # File path: parsed YAML dict -> DeviceConfig
+        dev = DeviceConfig.from_config(
+            {
+                "hostname": "fritz.box",
+                "username": "user",
+                "password": "password",
+                "ignore_private_macs": True,
+            }
+        )
+        assert dev.ignore_private_macs is True
+
+    def test_ignore_private_macs_defaults_false(self):
+        dev = DeviceConfig.from_config(
+            {"hostname": "fritz.box", "username": "user", "password": "password"}
+        )
+        assert dev.ignore_private_macs is False
+
+    def test_ignore_private_macs_from_env(self, monkeypatch):
+        # Env path: FRITZ_IGNORE_PRIVATE_MACS -> DeviceConfig
+        monkeypatch.setenv("FRITZ_USERNAME", "user")
+        monkeypatch.setenv("FRITZ_PASSWORD", "password")
+        monkeypatch.setenv("FRITZ_IGNORE_PRIVATE_MACS", "true")
+        config = get_config(None)
+        assert config.devices[0].ignore_private_macs is True
 
 
 class TestConfigChecks:
