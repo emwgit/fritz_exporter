@@ -52,6 +52,84 @@ def _bands(raw: object, issues: Issues | None = None) -> dict[str, Any]:
     return {band["name"]: band for band in parse_wifi_environment_response(raw, issues or Issues())}
 
 
+# FritzOS 8.40 per band: the primary channel and the channels of the band (value, chanRange).
+_CHANNELS_840: dict[str, tuple[int, list[tuple[int, bool]]]] = {
+    "24ghz": (6, [(1, False), (4, True), (5, True), (6, True), (7, True), (8, True), (13, False)]),
+    "5ghz": (
+        40,
+        [
+            (36, True),
+            (40, True),
+            (44, True),
+            (48, True),
+            (52, True),
+            (56, True),
+            (60, True),
+            (64, True),
+            (100, False),
+            (104, False),
+        ],
+    ),
+    "6ghz": (5, [(1, True), (5, True), (9, False), (13, False)]),
+}
+
+
+def _fritzos_840(raw: dict[str, Any]) -> dict[str, Any]:
+    """The same page in the FritzOS 8.40 shape: no ``bands``, the bands as keys of ``data``."""
+    new = copy.deepcopy(raw)
+    data = new["data"]
+    del data["bands"]
+    for band_id, (used_channel, channels) in _CHANNELS_840.items():
+        band = data[band_id]
+        del band["usedChannels"]
+        band["usedChannel"] = used_channel
+        band["channels"] = [{"value": value, "chanRange": in_use} for value, in_use in channels]
+    return new
+
+
+class TestFritzOs840Format:
+    def test_gives_the_same_bands_as_the_older_format(self):
+        assert _bands(_fritzos_840(WIFI_ENVIRONMENT_RAW)) == _bands(WIFI_ENVIRONMENT_RAW)
+
+    def test_used_channels_are_the_width_in_use_not_only_the_primary_channel(self):
+        # Channel 4 lies in the 2.4 GHz width (4 to 8) but is not the primary channel 6.
+        raw = _fritzos_840(WIFI_ENVIRONMENT_RAW)
+        raw["data"]["scanlist"].append(_network("24ghz", 4))
+
+        band = _bands(raw)["2.4GHz"]
+
+        assert (band["neighbours_same_channel"], band["neighbours_other_channels"]) == (3, 2)
+
+    def test_band_with_only_usedChannel_counts_the_primary_channel(self):
+        raw = _fritzos_840(WIFI_ENVIRONMENT_RAW)
+        del raw["data"]["24ghz"]["channels"]
+        raw["data"]["scanlist"].append(_network("24ghz", 4))
+
+        band = _bands(raw)["2.4GHz"]
+
+        assert (band["neighbours_same_channel"], band["neighbours_other_channels"]) == (2, 3)
+
+    def test_channel_without_value_skips_the_band_and_is_recorded(self):
+        raw = _fritzos_840(WIFI_ENVIRONMENT_RAW)
+        raw["data"]["5ghz"]["channels"].append({"chanRange": True})
+        issues = Issues()
+
+        bands = _bands(raw, issues)
+
+        assert list(bands) == ["2.4GHz", "6GHz"]
+        assert len(issues.messages) == 1
+        assert issues.messages[0].startswith("band 5ghz skipped")
+
+    def test_airtime_flag_without_any_band_object_is_a_read_problem(self):
+        raw = {"data": {"hasAirtime": True, "scanlist": []}}
+
+        with pytest.raises(DataError, match="no band object"):
+            parse_wifi_environment_response(raw, Issues())
+
+    def test_no_airtime_flag_without_any_band_object_gives_no_bands(self):
+        assert parse_wifi_environment_response({"data": {"hasAirtime": False}}, Issues()) == []
+
+
 class TestParseWifiEnvironment:
     def test_airtime_is_the_mean_of_the_newest_samples_as_a_ratio(self):
         band = _bands(WIFI_ENVIRONMENT_RAW)["2.4GHz"]
@@ -160,3 +238,18 @@ class TestWlanEnvironment:
 
         assert by_name["fritz_wifi_airtime_ratio"].samples == []
         assert "Could not read WlanEnvironment data from FritzWifi" in caplog.text
+
+    def test_airtime_without_any_band_object_is_reported_as_a_read_problem(
+        self, mock_fritzconnection: MagicMock
+    ):
+        client = MagicMock()
+        client.fetch_page.return_value = {"data": {"hasAirtime": True, "scanlist": []}}
+
+        by_name = self._collect(mock_fritzconnection, client)
+
+        problems = {
+            (s.labels["capability"], s.labels["level"])
+            for s in by_name["fritz_read_problem"].samples
+        }
+        assert ("WlanEnvironment", "skipped") in problems
+        assert by_name["fritz_wifi_airtime_ratio"].samples == []

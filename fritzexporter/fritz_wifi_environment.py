@@ -6,11 +6,17 @@ result of the last scan for neighbouring networks. It answers only for
 ``xhrId=environment``. The generic web login and the ``data.lua`` fetching are in
 :mod:`fritzexporter.fritz_webui`; this module holds the page name and the parser.
 
+The bands are listed in two shapes. FritzOS 8.25 has ``data.bands`` and, per band,
+``usedChannels`` (the channels in use). FritzOS 8.40 has no ``data.bands``: each band
+is a key of its own, with ``usedChannel`` (the primary channel) and ``channels`` (the
+channels of the band; those with ``chanRange`` true are the width in use).
+
 ``airtimedata`` is ``<time>,<step>,<count>,<a>:<b>,<a>:<b>,...``: one sample per
 second, newest first (the same list shifted by the seconds between two requests),
-each ``a:b`` in percent with ``a`` never below ``b`` in 10800 samples seen on a
-FRITZ!Box 5690 Pro. The box does not document what they are; the munin plugin
-``fritzbox_wifi_load`` calls ``a`` received and ``b`` sent airtime.
+each ``a:b`` in percent with ``a`` never below ``b`` in the samples seen on a
+FRITZ!Box 5690 Pro: 10800 with FritzOS 8.25, 600 with FritzOS 8.40. The box does not
+document what they are; the munin plugin ``fritzbox_wifi_load`` calls ``a`` received
+and ``b`` sent airtime.
 """
 
 from __future__ import annotations
@@ -83,27 +89,61 @@ def _neighbours(data: Reply, issues: Issues) -> dict[str, list[int | None]]:
     return channels
 
 
+def _band_ids(data: Reply) -> list[str]:
+    """The band identifiers: ``data.bands`` (FritzOS 8.25), else the band keys (8.40)."""
+    listed = [str(band_id) for band_id in data.items("bands")]
+    if listed:
+        return listed
+    return [band_id for band_id in _BAND_NAMES if data.opt_obj(band_id) is not None]
+
+
+def _used_channels(band: Reply, band_id: str, issues: Issues) -> list[int]:
+    """The channels a band uses: ``usedChannels``, else the width of ``channels``, else the primary.
+
+    A ``channels`` entry with ``chanRange`` true contributes its ``value``; one without
+    ``value`` raises :class:`~fritzexporter.reply.DataError`, which the caller records
+    for the whole band.
+    """
+    listed = [
+        to_int(channel, f"chan {band_id} usedChannels") for channel in band.items("usedChannels")
+    ]
+    if any(channel is not None for channel in listed):
+        return [channel for channel in listed if channel is not None]
+    width = [
+        entry.integer("value")
+        for _, entry in issues.objects(band, "channels")
+        if entry.opt_flag("chanRange")
+    ]
+    if width:
+        return width
+    primary = band.opt_integer("usedChannel")
+    return [] if primary is None else [primary]
+
+
 def parse_wifi_environment_response(raw: object, issues: Issues) -> list[WifiBand]:
     """Extract airtime and neighbouring networks of the bands the box lists.
 
     A band that is not active is left out. A defective value gives ``None`` and
     a defective item is skipped, both recorded in ``issues``; a reply of the
     wrong shape, or without ``data``, raises :class:`~fritzexporter.reply.DataError`.
+    A reply that says it has airtime but has no band object raises too: the page
+    changed shape, which the exporter must report rather than export nothing.
     """
     data = Reply(raw, "chan").require_key("data").opt_obj("data") or Reply({}, "chan data")
     has_airtime = data.opt_flag("hasAirtime") is not False
     neighbours = issues.value(lambda: _neighbours(data, issues)) or {}
     bands: list[WifiBand] = []
-    for band_id in data.items("bands"):
-        band = data.opt_obj(str(band_id))
-        if band is None or band.opt_flag("active") is False:
+    band_objects = 0
+    for band_id in _band_ids(data):
+        band = data.opt_obj(band_id)
+        if band is None:
+            continue
+        band_objects += 1
+        if band.opt_flag("active") is False:
             continue
         with issues.item(f"band {band_id}"):
-            used = [
-                to_int(channel, f"chan {band_id} usedChannels")
-                for channel in band.items("usedChannels")
-            ]
-            others = [c for c in neighbours.get(str(band_id), []) if c is not None]
+            used = _used_channels(band, band_id, issues)
+            others = [c for c in neighbours.get(band_id, []) if c is not None]
             airtime = None
             text = band.opt_text("airtimedata")
             if has_airtime and text:
@@ -119,4 +159,7 @@ def parse_wifi_environment_response(raw: object, issues: Issues) -> list[WifiBan
                     "neighbours_other_channels": sum(1 for c in others if c not in used),
                 }
             )
+    if data.opt_flag("hasAirtime") is True and band_objects == 0:
+        msg = "chan: hasAirtime is true, but no band object was found"
+        raise DataError(msg)
     return bands
