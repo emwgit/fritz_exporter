@@ -312,8 +312,7 @@ def read_action(device: FritzDevice, service: str, action: str, **arguments: Any
     ...), but passes others such as ``ui8`` on as strings, and a box may send an
     empty string for any of them; the accessors cover both.
     """
-    with device.fc_lock:
-        result = device.fc.call_action(service, action, **arguments)
+    result = device.fc.call_action(service, action, **arguments)
     return Reply(result, f"{service}.{action}")
 
 

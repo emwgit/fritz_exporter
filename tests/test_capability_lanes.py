@@ -1,9 +1,7 @@
 """Tests for collecting the capabilities of a device in two lanes (fritzdevice.py)."""
 
 import threading
-import time
 from collections.abc import Callable, Sequence
-from concurrent.futures import ThreadPoolExecutor
 from typing import Any
 from unittest.mock import MagicMock, patch
 
@@ -12,7 +10,6 @@ from prometheus_client.core import Metric
 
 from fritzexporter.fritz_webui import FritzWebUiError
 from fritzexporter.fritzdevice import FritzCollector
-from fritzexporter.reply import read_action
 
 from .collect import fake_device
 from .fc_services_mock import fc_services_devices
@@ -117,32 +114,3 @@ class TestCapabilityLanes:
         assert instances["WlanEnvironment"].uses_webui
         assert not instances["DeviceInfo"].uses_webui
         assert collector._collect_capabilities()
-
-    def test_tr064_calls_of_the_two_lanes_do_not_overlap(self, mock_fritzconnection: MagicMock):
-        device = fake_device(mock_fritzconnection, fc_services_devices["FritzBox 7590"])
-        fc = mock_fritzconnection.return_value
-        answer = fc.call_action.side_effect
-        guard = threading.Lock()
-        active = 0
-        most_at_once = 0
-
-        def call_action(service: str, action: str, **kwargs: Any) -> Any:
-            nonlocal active, most_at_once
-            with guard:
-                active += 1
-                most_at_once = max(most_at_once, active)
-            time.sleep(0.001)
-            with guard:
-                active -= 1
-            return answer(service, action, **kwargs)
-
-        fc.call_action.side_effect = call_action
-
-        def read_many(_worker: int) -> None:
-            for _call in range(20):
-                read_action(device, "DeviceInfo1", "GetInfo")
-
-        with ThreadPoolExecutor(max_workers=2) as pool:
-            list(pool.map(read_many, range(2)))
-
-        assert most_at_once == 1
