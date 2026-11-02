@@ -49,6 +49,7 @@ def _register_device(dev: DeviceConfig, fritzcollector: FritzCollector) -> None:
         FritzCredentials(dev.hostname, dev.username, dev.read_password()),
         dev.name,
         host_info=dev.host_info,
+        ignore_private_macs=dev.ignore_private_macs,
         wifi_client_info=dev.wifi_client_info,
         connection=ConnectionOptions(
             connection_timeout=dev.connection_timeout,

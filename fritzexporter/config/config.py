@@ -133,6 +133,7 @@ _DEVICE_ENV = {
     "password": "FRITZ_PASSWORD",
     "password_file": "FRITZ_PASSWORD_FILE",
     "host_info": "FRITZ_HOST_INFO",
+    "ignore_private_macs": "FRITZ_IGNORE_PRIVATE_MACS",
     "wifi_client_info": "FRITZ_WIFI_CLIENT_INFO",
     "connection_timeout": "FRITZ_CONNECTION_TIMEOUT",
     "use_tls": "FRITZ_USE_TLS",
@@ -240,6 +241,8 @@ class DeviceConfig:
     # Defaults to the hostname.
     name: str = field(default="", converter=_named(_text))
     host_info: bool = field(default=False, converter=_named(converters.to_bool))
+    # Leaves out unconnected hosts with a private MAC address (rule D6).
+    ignore_private_macs: bool = field(default=False, converter=_named(converters.to_bool))
     wifi_client_info: bool = field(default=False, converter=_named(converters.to_bool))
     connection_timeout: int | None = field(
         default=DEFAULT_CONNECTION_TIMEOUT,

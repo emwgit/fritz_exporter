@@ -18,6 +18,7 @@ from fritzexporter.fritzcapabilities import (
     FritzCapabilities,
     ProblemLevel,
     ProblemState,
+    is_private_mac_host,
     report_problem,
 )
 from fritzexporter.fritz_webui import FritzWebUiClient, FritzWebUiError
@@ -123,6 +124,142 @@ class TestFritzCapabilitiesMethods:
         logged = [r for r in caplog.records if "GetHostNumberOfEntries" in r.message]
         assert [r.levelno for r in logged] == [level]
         assert message in logged[0].message
+
+
+PRIVATE_NAMED = {
+    "NewMACAddress": "02:AA:BB:CC:DD:EE",
+    "NewIPAddress": "",
+    "NewHostName": "PC-02-AA-BB-CC-DD-EE",
+    "NewActive": 0,
+}
+PRIVATE_UNNAMED = {
+    "NewMACAddress": "02:11:22:33:44:55",
+    "NewIPAddress": "",
+    "NewHostName": "",
+    "NewActive": 0,
+}
+CONNECTED_PRIVATE = {
+    "NewMACAddress": "02:99:88:77:66:55",
+    "NewIPAddress": "192.168.178.50",
+    "NewHostName": "laptop",
+    "NewActive": 1,
+}
+VENDOR = {
+    "NewMACAddress": "00:11:22:33:44:55",
+    "NewIPAddress": "",
+    "NewHostName": "",
+    "NewActive": 0,
+}
+HOSTS = [PRIVATE_NAMED, PRIVATE_UNNAMED, CONNECTED_PRIVATE, VENDOR]
+
+
+def _hosts_mock(hosts: list[dict]):
+    def mock(service, action, **kwargs):
+        # The probe passes arguments=..., reads from _enumerate pass them flat.
+        args = kwargs.get("arguments", kwargs)
+        if service == "Hosts1" and action == "GetHostNumberOfEntries":
+            return {"NewHostNumberOfEntries": len(hosts)}
+        if service == "Hosts1" and action == "GetGenericHostEntry":
+            index = args["NewIndex"]
+            if index >= len(hosts):
+                raise FritzArrayIndexError("invalid array index")
+            return hosts[index]
+        if service == "Hosts1" and action == "X_AVM-DE_GetSpecificHostEntryByIP":
+            if args["NewIPAddress"] == "0.0.0.0":
+                raise FritzLookUpError("no such entry")
+            return {
+                "NewInterfaceType": "802.11",
+                "NewX_AVM-DE_Port": "",
+                "NewX_AVM-DE_Model": "",
+                "NewX_AVM-DE_Speed": 0,
+            }
+        return call_action_mock(service, action, **kwargs)
+
+    return mock
+
+
+class TestPrivateMacRule:
+    """Rule D6: is_private_mac_host."""
+
+    @pytest.mark.parametrize(
+        ("mac", "ip", "active", "name", "expected"),
+        [
+            ("02:11:22:33:44:55", "", False, "", True),
+            ("02:AA:BB:CC:DD:EE", "", False, "PC-02-AA-BB-CC-DD-EE", True),
+            ("02:aa:bb:cc:dd:ee", "", False, "pc-02-aa-bb-cc-dd-ee", True),
+            # The second bit of the first octet: 0x0A has it set, 0x00 does not.
+            ("0A:11:22:33:44:55", "", False, "", True),
+            ("00:11:22:33:44:55", "", False, "", False),
+            # A name of its own, a present IP address, or an active host: kept.
+            ("02:AA:BB:CC:DD:EE", "", False, "my phone", False),
+            ("02:AA:BB:CC:DD:EE", "192.168.178.50", False, "", False),
+            ("02:AA:BB:CC:DD:EE", "", True, "", False),
+            # An unknown active state is not inactive.
+            ("02:AA:BB:CC:DD:EE", "", None, "", False),
+            # A malformed MAC address is not private.
+            ("not-a-mac", "", False, "", False),
+            ("02:AA:BB:CC:DD", "", False, "", False),
+        ],
+    )
+    def test_rule(self, mac, ip, active, name, expected):
+        assert is_private_mac_host(mac, ip, name, active=active) is expected
+
+
+@patch("fritzexporter.tr064_remote.FritzConnection")
+class TestIgnorePrivateMacs:
+    """The ignore_private_macs option on HostInfo."""
+
+    def _collect(self, mock_fritzconnection: MagicMock, hosts: list[dict], *, ignore: bool):
+        fc = mock_fritzconnection.return_value
+        fc.call_action.side_effect = _hosts_mock(hosts)
+        fc.services = create_fc_services(fc_services_devices["FritzBox 7590"])
+        collector = FritzCollector()
+        device = FritzDevice(
+            FritzCredentials("somehost", "someuser", "password"),
+            "FritzMock",
+            host_info=True,
+            ignore_private_macs=ignore,
+        )
+        collector.register(device)
+        return list(collector.collect())
+
+    def test_ignored_hosts_produce_no_host_metrics(self, mock_fritzconnection: MagicMock):
+        metrics = self._collect(mock_fritzconnection, HOSTS, ignore=True)
+
+        macs = {
+            sample.labels["mac_address"]
+            for metric in metrics
+            if metric.name == "fritz_host_active"
+            for sample in metric.samples
+        }
+        assert macs == {CONNECTED_PRIVATE["NewMACAddress"], VENDOR["NewMACAddress"]}
+
+    def test_gauge_counts_ignored_hosts(self, mock_fritzconnection: MagicMock):
+        metrics = self._collect(mock_fritzconnection, HOSTS, ignore=True)
+
+        [ignored] = [m for m in metrics if m.name == "fritz_hosts_ignored"]
+        [sample] = ignored.samples
+        assert sample.value == 2
+        assert sample.labels["friendly_name"] == "FritzMock"
+        assert sample.labels["serial"] == "1234567890"
+
+    def test_gauge_is_zero_when_nothing_matches(self, mock_fritzconnection: MagicMock):
+        metrics = self._collect(mock_fritzconnection, [CONNECTED_PRIVATE, VENDOR], ignore=True)
+
+        [ignored] = [m for m in metrics if m.name == "fritz_hosts_ignored"]
+        assert [s.value for s in ignored.samples] == [0]
+
+    def test_off_keeps_all_hosts_and_has_no_gauge(self, mock_fritzconnection: MagicMock):
+        metrics = self._collect(mock_fritzconnection, HOSTS, ignore=False)
+
+        macs = [
+            sample.labels["mac_address"]
+            for metric in metrics
+            if metric.name == "fritz_host_active"
+            for sample in metric.samples
+        ]
+        assert len(macs) == len(HOSTS)
+        assert not [m for m in metrics if m.name == "fritz_hosts_ignored"]
 
 
 @patch("fritzexporter.tr064_remote.FritzConnection")

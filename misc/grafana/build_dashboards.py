@@ -1457,6 +1457,21 @@ def overview() -> dict:  # noqa: PLR0915
         8,
     )
     lay.add(
+        stat(
+            "Hosts left out",
+            [target(f"sum({q('fritz_hosts_ignored')})")],
+            description=(
+                "Unconnected hosts with a private MAC address that are left out of the "
+                "host metrics. Needs ignore_private_macs: true."
+            ),
+            graph=True,
+            fixed="blue",
+            color="background",
+        ),
+        4,
+        8,
+    )
+    lay.add(
         timeseries(
             "Active hosts by interface",
             targets(
@@ -1474,7 +1489,7 @@ def overview() -> dict:  # noqa: PLR0915
             fill=40,
             decimals=0,
         ),
-        20,
+        16,
         8,
     )
     lay.add(

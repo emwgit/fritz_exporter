@@ -5664,6 +5664,69 @@
           }
         },
         {
+          "type": "stat",
+          "title": "Hosts left out",
+          "description": "Unconnected hosts with a private MAC address that are left out of the host metrics. Needs ignore_private_macs: true.",
+          "datasource": {
+            "type": "prometheus",
+            "uid": "${datasource}"
+          },
+          "targets": [
+            {
+              "datasource": {
+                "type": "prometheus",
+                "uid": "${datasource}"
+              },
+              "expr": "sum(fritz_hosts_ignored{friendly_name=\"$device\"})",
+              "refId": "A",
+              "legendFormat": "__auto"
+            }
+          ],
+          "fieldConfig": {
+            "defaults": {
+              "noValue": "-",
+              "thresholds": {
+                "mode": "absolute",
+                "steps": [
+                  {
+                    "color": "green",
+                    "value": null
+                  }
+                ]
+              },
+              "mappings": [],
+              "color": {
+                "mode": "fixed",
+                "fixedColor": "blue"
+              },
+              "unit": "short"
+            },
+            "overrides": []
+          },
+          "options": {
+            "reduceOptions": {
+              "calcs": [
+                "lastNotNull"
+              ],
+              "fields": "",
+              "values": false
+            },
+            "colorMode": "background",
+            "graphMode": "area",
+            "textMode": "auto",
+            "justifyMode": "center",
+            "orientation": "auto",
+            "wideLayout": true
+          },
+          "id": 83,
+          "gridPos": {
+            "h": 8,
+            "w": 4,
+            "x": 4,
+            "y": 186
+          }
+        },
+        {
           "type": "timeseries",
           "title": "Active hosts by interface",
           "description": "",
@@ -5717,11 +5780,11 @@
               "sort": "desc"
             }
           },
-          "id": 83,
+          "id": 84,
           "gridPos": {
             "h": 8,
-            "w": 20,
-            "x": 4,
+            "w": 16,
+            "x": 8,
             "y": 186
           }
         },
@@ -5875,7 +5938,7 @@
               }
             }
           ],
-          "id": 84,
+          "id": 85,
           "gridPos": {
             "h": 10,
             "w": 24,
@@ -5889,7 +5952,7 @@
       "type": "row",
       "title": "Smart home",
       "collapsed": true,
-      "id": 85,
+      "id": 86,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -5960,7 +6023,7 @@
               "sort": "desc"
             }
           },
-          "id": 86,
+          "id": 87,
           "gridPos": {
             "h": 7,
             "w": 12,
@@ -6071,7 +6134,7 @@
               "sort": "desc"
             }
           },
-          "id": 87,
+          "id": 88,
           "gridPos": {
             "h": 7,
             "w": 12,
@@ -6132,7 +6195,7 @@
               "sort": "desc"
             }
           },
-          "id": 88,
+          "id": 89,
           "gridPos": {
             "h": 7,
             "w": 12,
@@ -6193,7 +6256,7 @@
               "sort": "desc"
             }
           },
-          "id": 89,
+          "id": 90,
           "gridPos": {
             "h": 7,
             "w": 12,
@@ -6254,7 +6317,7 @@
               "sort": "desc"
             }
           },
-          "id": 90,
+          "id": 91,
           "gridPos": {
             "h": 7,
             "w": 12,
@@ -6315,7 +6378,7 @@
               "sort": "desc"
             }
           },
-          "id": 91,
+          "id": 92,
           "gridPos": {
             "h": 7,
             "w": 12,
@@ -6378,7 +6441,7 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 92,
+          "id": 93,
           "gridPos": {
             "h": 7,
             "w": 6,
@@ -6450,7 +6513,7 @@
             "namePlacement": "auto",
             "sizing": "auto"
           },
-          "id": 93,
+          "id": 94,
           "gridPos": {
             "h": 7,
             "w": 6,
@@ -6534,7 +6597,7 @@
               "showLegend": false
             }
           },
-          "id": 94,
+          "id": 95,
           "gridPos": {
             "h": 6,
             "w": 12,
@@ -6950,7 +7013,7 @@
               }
             }
           ],
-          "id": 95,
+          "id": 96,
           "gridPos": {
             "h": 6,
             "w": 12,
@@ -6964,7 +7027,7 @@
       "type": "row",
       "title": "Provider management (TR-069, USP)",
       "collapsed": true,
-      "id": 96,
+      "id": 97,
       "gridPos": {
         "h": 1,
         "w": 24,
@@ -7029,7 +7092,7 @@
               }
             }
           ],
-          "id": 97,
+          "id": 98,
           "gridPos": {
             "h": 4,
             "w": 8,
@@ -7109,7 +7172,7 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 98,
+          "id": 99,
           "gridPos": {
             "h": 4,
             "w": 4,
@@ -7173,7 +7236,7 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 99,
+          "id": 100,
           "gridPos": {
             "h": 4,
             "w": 4,
@@ -7253,7 +7316,7 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 100,
+          "id": 101,
           "gridPos": {
             "h": 4,
             "w": 4,
@@ -7344,7 +7407,7 @@
             "orientation": "auto",
             "wideLayout": true
           },
-          "id": 101,
+          "id": 102,
           "gridPos": {
             "h": 4,
             "w": 4,

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import re
 import time
 from abc import ABC, abstractmethod
 from collections.abc import Generator, ItemsView, Iterator
@@ -9,7 +10,7 @@ from datetime import UTC, datetime
 from enum import StrEnum
 from http import HTTPStatus
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Final, NamedTuple, cast
 from urllib.parse import urlparse
 
 from fritzconnection.core.exceptions import (  # type: ignore[import]
@@ -1648,6 +1649,29 @@ class MeshTopology(FritzCapability):
             self._add("maxdatarate", [*base, "tx"], link.max_tx)
 
 
+# A MAC address as the box reports it: six hex pairs separated by colons.
+_MAC_ADDRESS: Final = re.compile(r"[0-9A-Fa-f]{2}(?::[0-9A-Fa-f]{2}){5}")
+# Bit 0x02 of the first octet: the address is locally administered, not a vendor's.
+_LOCALLY_ADMINISTERED_BIT: Final = 0x02
+
+
+def is_private_mac_host(mac: str, ip: str, name: str, *, active: bool | None) -> bool:
+    """Rule D6: whether a host is an unconnected device with a private MAC address.
+
+    All four tests must hold: the MAC address is locally administered, the host
+    has no IP address, it is not active, and its name is empty or ``PC-`` plus the
+    MAC address with dashes (case insensitive). The bit alone would also drop
+    connected devices with a random address; the name alone depends on the box.
+    An unknown ``active`` (``None``) is not inactive. A malformed MAC is not private.
+    """
+    if _MAC_ADDRESS.fullmatch(mac) is None:
+        return False
+    if not (int(mac[:2], 16) & _LOCALLY_ADMINISTERED_BIT):
+        return False
+    expected_name = f"PC-{mac.upper().replace(':', '-')}"
+    return ip == "" and active is False and name.upper() in ("", expected_name)
+
+
 class HostInfo(FritzCapability):
     def __init__(self) -> None:
         super().__init__()
@@ -1701,6 +1725,18 @@ class HostInfo(FritzCapability):
             "port",
             "model",
         )
+        self._gauge(
+            "hostsignored",
+            "fritz_hosts_ignored",
+            "Unconnected hosts with a private MAC address left out (ignore_private_macs)",
+        )
+
+    def _get_metric_values(self) -> Iterator[CounterMetricFamily | GaugeMetricFamily]:
+        # fritz_hosts_ignored gets samples only from devices with ignore_private_macs,
+        # so it is absent while the option is off.
+        for key, family in self.metrics.items():
+            if key != "hostsignored" or family.samples:
+                yield family
 
     def _generate_metric_values(self, device: FritzDevice) -> None:
         num_hosts = read_action(device, "Hosts1", "GetHostNumberOfEntries").integer(
@@ -1720,19 +1756,23 @@ class HostInfo(FritzCapability):
             item="host",
         )
         seen: set[str] = set()
+        ignored = 0
         for host_index, host_result in hosts:
             with self._item(f"host {host_index}"):
-                self._collect_host(device, host_index, host_result, seen)
+                ignored += self._collect_host(device, host_index, host_result, seen)
+        if device.ignore_private_macs:
+            self._add("hostsignored", [device.serial, device.friendly_name], ignored)
 
     def _collect_host(
         self, device: FritzDevice, host_index: int, host_result: Reply, seen: set[str]
-    ) -> None:
+    ) -> bool:
+        """Collect one host; True if it was left out as a private MAC address (rule D6)."""
         host_mac = host_result.text("NewMACAddress", "")
         if not host_mac:
             # The MAC address tells hosts apart. Host tables have entries without
             # one (e.g. VPN clients); that is no defect, so they are left out quietly.
             logger.debug("Host %s on %s has no MAC address, skipping", host_index, device.log_name)
-            return
+            return False
         if host_mac in seen:
             msg = f"Hosts1.GetGenericHostEntry NewMACAddress of host {host_index}: listed twice"
             raise DataError(msg)
@@ -1740,6 +1780,19 @@ class HostInfo(FritzCapability):
         # A host may have no address or name; "" is passed on as the label.
         host_ip = host_result.text("NewIPAddress", "")
         host_name = host_result.text("NewHostName", "")
+        host_active = self.issues.flag(host_result, "NewActive")
+        if device.ignore_private_macs and is_private_mac_host(
+            host_mac,
+            host_ip,
+            host_name,
+            active=None if host_active is None else bool(host_active),
+        ):
+            logger.debug(
+                "Host %s on %s: unconnected private MAC address, left out",
+                host_index,
+                device.log_name,
+            )
+            return True
         host_interface = host_port = host_model = "n/a"
         host_speed: float | None = 0.0
         if host_ip != "":
@@ -1774,13 +1827,14 @@ class HostInfo(FritzCapability):
                 device.log_name,
             )
         labels = [device.serial, device.friendly_name, host_mac]
-        self._add("hostactive", labels, self.issues.flag(host_result, "NewActive"))
+        self._add("hostactive", labels, host_active)
         self._add("hostspeed", labels, host_speed)
         self._add(
             "hostinfo",
             [*labels, host_ip, host_name, host_interface, host_port, host_model],
             1,
         )
+        return False
 
 
 class HomeAutomation(FritzCapability):
