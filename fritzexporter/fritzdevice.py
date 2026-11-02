@@ -1,6 +1,7 @@
 import collections
 import logging
 import threading
+from concurrent.futures import ThreadPoolExecutor
 
 from attrs import Factory, define, evolve, field
 from fritzconnection import FritzConnection  # type: ignore[import]
@@ -21,6 +22,7 @@ from fritzexporter.exceptions import (
 from fritzexporter.fritz_webui import FritzWebUiClient
 from fritzexporter.fritzcapabilities import (
     FritzCapabilities,
+    FritzCapability,
     ProblemLevel,
     ProblemState,
     report_problem,
@@ -480,10 +482,35 @@ class FritzCollector(Collector):
         for dev in self.devices:
             dev.add_connection_mode(connection_mode, access_type)
         collected: list[CounterMetricFamily | GaugeMetricFamily] = [connection_mode, access_type]
-
-        for name, capa in self._capability_instances.items():
-            collected.extend(list(capa.get_metrics(self.devices, name)))
+        collected.extend(self._collect_capabilities())
         return collected, offline_devices
+
+    def _collect_capabilities(self) -> list[CounterMetricFamily | GaugeMetricFamily]:
+        """Collect every capability in two lanes; the metrics come back in capability order.
+
+        The capabilities that read the web interface run in one lane, the TR-064
+        capabilities in the other, so the slow web interface reads and the TR-064
+        reads do not wait for each other. Each lane runs its capabilities one after
+        the other. The lanes share the devices (``FritzDevice.available``); each
+        capability writes only its own metrics and problem state. An exception in
+        one lane is raised after the other lane has finished.
+        """
+        capabilities = list(self._capability_instances.items())
+        lanes = [
+            [(name, capa) for name, capa in capabilities if capa.uses_webui],
+            [(name, capa) for name, capa in capabilities if not capa.uses_webui],
+        ]
+        with ThreadPoolExecutor(max_workers=len(lanes), thread_name_prefix="fritz-lane") as pool:
+            futures = [pool.submit(self._collect_lane, lane) for lane in lanes]
+            results = [future.result() for future in futures]
+        by_name = {name: metrics for result in results for name, metrics in result.items()}
+        return [metric for name, _ in capabilities for metric in by_name[name]]
+
+    def _collect_lane(
+        self, lane: list[tuple[str, FritzCapability]]
+    ) -> dict[str, list[CounterMetricFamily | GaugeMetricFamily]]:
+        """Run the capabilities of one lane, one after the other."""
+        return {name: list(capa.get_metrics(self.devices, name)) for name, capa in lane}
 
     def _build_problem_metric(self) -> GaugeMetricFamily:
         """One series per device and capability whose last scrape skipped data."""
