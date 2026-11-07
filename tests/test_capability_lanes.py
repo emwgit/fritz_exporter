@@ -60,14 +60,18 @@ def _meet(
 @patch("fritzexporter.tr064_remote.FritzConnection")
 class TestCapabilityLanes:
     def _collector(self, mock_fritzconnection: MagicMock) -> tuple[FritzCollector, MagicMock]:
-        device = fake_device(mock_fritzconnection, fc_services_devices["FritzBox 7590"], host_info=True)
+        device = fake_device(
+            mock_fritzconnection, fc_services_devices["FritzBox 7590"], host_info=True
+        )
         webui = _failing_webui()
         device.webui_client = webui
         collector = FritzCollector()
         collector.register(device)
         return collector, webui
 
-    def test_metrics_come_in_the_order_of_the_sequential_run(self, mock_fritzconnection: MagicMock):
+    def test_metrics_come_in_the_order_of_the_sequential_run(
+        self, mock_fritzconnection: MagicMock
+    ) -> None:
         collector, _ = self._collector(mock_fritzconnection)
 
         lanes = _samples(collector._collect_capabilities())
@@ -78,7 +82,7 @@ class TestCapabilityLanes:
 
     def test_exception_in_one_lane_does_not_stop_the_other(
         self, mock_fritzconnection: MagicMock, monkeypatch: pytest.MonkeyPatch
-    ):
+    ) -> None:
         collector, webui = self._collector(mock_fritzconnection)
 
         def bug(devices: list[Any], name: str) -> None:
@@ -94,7 +98,7 @@ class TestCapabilityLanes:
 
     def test_the_lanes_run_at_the_same_time(
         self, mock_fritzconnection: MagicMock, monkeypatch: pytest.MonkeyPatch
-    ):
+    ) -> None:
         collector, _ = self._collector(mock_fritzconnection)
         instances = collector._capability_instances
         web_started = threading.Event()

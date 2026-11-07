@@ -153,7 +153,7 @@ def _traceback(error: Exception) -> Exception | None:
 
 
 class FritzDevice:
-    def __init__(  # noqa: PLR0913
+    def __init__(
         self,
         creds: FritzCredentials,
         name: str,

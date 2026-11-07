@@ -74,7 +74,7 @@ DSL_STAT_RAW = page()
 
 
 class TestParseDslStat:
-    def test_reads_both_directions_of_every_counter(self):
+    def test_reads_both_directions_of_every_counter(self) -> None:
         issues = Issues()
 
         counters = parse_dsl_stat_response(page(), issues)["errors"]
@@ -91,7 +91,7 @@ class TestParseDslStat:
         }
         assert issues.messages == []
 
-    def test_titles_are_not_used(self):
+    def test_titles_are_not_used(self) -> None:
         # The box answers in its interface language; only the structure counts.
         english = copy.deepcopy(ERROR_COUNTERS)
         for row in english:
@@ -102,7 +102,7 @@ class TestParseDslStat:
             page(), Issues()
         )
 
-    def test_reads_the_line_data(self):
+    def test_reads_the_line_data(self) -> None:
         issues = Issues()
 
         line = parse_dsl_stat_response(page(), issues)["line"]
@@ -116,7 +116,7 @@ class TestParseDslStat:
         }
         assert issues.messages == []
 
-    def test_unknown_section_layout_gives_only_the_line_length(self):
+    def test_unknown_section_layout_gives_only_the_line_length(self) -> None:
         # e.g. an ADSL box: profile, carrier set and vectoring are not guessed.
         negotiated = [row for row in NEGOTIATED_VALUES if row.get("title") != "Trägersatz"]
         issues = Issues()
@@ -132,7 +132,7 @@ class TestParseDslStat:
         }
         assert issues.messages == []
 
-    def test_defective_line_length_is_recorded(self):
+    def test_defective_line_length_is_recorded(self) -> None:
         negotiated = copy.deepcopy(NEGOTIATED_VALUES)
         negotiated[8]["val"] = ["n/a"]
         issues = Issues()
@@ -146,7 +146,7 @@ class TestParseDslStat:
         ]
 
     @pytest.mark.parametrize("raw", [{"data": {"isConnected": False}}, {"data": []}])
-    def test_line_without_counters_gives_none_and_no_issue(self, raw):
+    def test_line_without_counters_gives_none_and_no_issue(self, raw: object) -> None:
         issues = Issues()
 
         statistics = parse_dsl_stat_response(raw, issues)
@@ -155,7 +155,7 @@ class TestParseDslStat:
         assert set(statistics["line"].values()) == {None}
         assert issues.messages == []
 
-    def test_missing_section_gives_none_and_is_recorded(self):
+    def test_missing_section_gives_none_and_is_recorded(self) -> None:
         issues = Issues()
 
         counters = parse_dsl_stat_response(page(ERROR_COUNTERS[:12]), issues)["errors"]
@@ -164,7 +164,7 @@ class TestParseDslStat:
         assert counters["uncorrected_dtus_minute"] == NONE
         assert issues.messages == ["dslStat errorCounters: expected 4 sections, found 3"]
 
-    def test_defective_value_gives_none_and_is_recorded(self):
+    def test_defective_value_gives_none_and_is_recorded(self) -> None:
         rows = copy.deepcopy(ERROR_COUNTERS)
         rows[1]["val"][0]["ds"] = "n/a"
         issues = Issues()
@@ -177,7 +177,7 @@ class TestParseDslStat:
             "dslStat errorCounters section 0 errored_seconds val[0] ds: expected a number"
         ]
 
-    def test_value_of_the_wrong_shape_gives_none_and_is_recorded(self):
+    def test_value_of_the_wrong_shape_gives_none_and_is_recorded(self) -> None:
         rows = copy.deepcopy(ERROR_COUNTERS)
         rows[1]["val"] = "none"
         issues = Issues()
@@ -200,7 +200,7 @@ class TestParseDslStat:
             {"data": {"negotiatedValues": ["not an object"]}},
         ],
     )
-    def test_reply_of_the_wrong_shape_raises(self, raw):
+    def test_reply_of_the_wrong_shape_raises(self, raw: object) -> None:
         with pytest.raises(DataError):
             parse_dsl_stat_response(raw, Issues())
 
@@ -222,7 +222,9 @@ class TestWanDslLineStatistics:
             for s in by_name[name].samples
         }
 
-    def test_exports_counters_per_direction_and_window(self, mock_fritzconnection: MagicMock):
+    def test_exports_counters_per_direction_and_window(
+        self, mock_fritzconnection: MagicMock
+    ) -> None:
         client = MagicMock()
         client.fetch_page.return_value = DSL_STAT_RAW
 
@@ -243,7 +245,7 @@ class TestWanDslLineStatistics:
         assert self._samples(by_name, "fritz_dsl_crc_errors")[("rx", "15_minutes")] == 3
         assert self._samples(by_name, "fritz_dsl_uncorrected_dtus")[("rx", "minute")] == 0.5
 
-    def test_exports_line_length_and_info(self, mock_fritzconnection: MagicMock):
+    def test_exports_line_length_and_info(self, mock_fritzconnection: MagicMock) -> None:
         client = MagicMock()
         client.fetch_page.return_value = DSL_STAT_RAW
 
@@ -252,7 +254,7 @@ class TestWanDslLineStatistics:
         assert self._samples(by_name, "fritz_dsl_line_length_meters") == {(): 260}
         assert self._samples(by_name, "fritz_dsl_line_info") == {("35b", "B43", "full", "full"): 1}
 
-    def test_line_without_profile_exports_no_info(self, mock_fritzconnection: MagicMock):
+    def test_line_without_profile_exports_no_info(self, mock_fritzconnection: MagicMock) -> None:
         client = MagicMock()
         client.fetch_page.return_value = page(negotiated=NEGOTIATED_VALUES[:9])
 
@@ -262,8 +264,8 @@ class TestWanDslLineStatistics:
         assert self._samples(by_name, "fritz_dsl_line_length_meters") == {(): 260}
 
     def test_web_ui_error_exports_nothing_and_is_reported(
-        self, mock_fritzconnection: MagicMock, caplog
-    ):
+        self, mock_fritzconnection: MagicMock, caplog: pytest.LogCaptureFixture
+    ) -> None:
         client = MagicMock()
         client.fetch_page.side_effect = FritzWebUiError("login failed")
 
@@ -273,7 +275,9 @@ class TestWanDslLineStatistics:
         assert by_name["fritz_dsl_errored_seconds"].samples == []
         assert "Could not read WanDslLineStatistics data from FritzDsl" in caplog.text
 
-    def test_defective_counter_is_exported_as_missing(self, mock_fritzconnection: MagicMock):
+    def test_defective_counter_is_exported_as_missing(
+        self, mock_fritzconnection: MagicMock
+    ) -> None:
         rows = copy.deepcopy(ERROR_COUNTERS)
         rows[1]["val"][0]["ds"] = "n/a"
         client = MagicMock()

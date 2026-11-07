@@ -1,0 +1,19 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["github>pdreker/renovate-config"],
+  "packageRules": [
+    {
+      "description": "Python base image: only patch updates; minor/major interpreter bumps are done by hand (as before with Dependabot)",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["python"],
+      "matchUpdateTypes": ["major", "minor"],
+      "enabled": false
+    },
+    {
+      "description": "The chart's own image follows the chart appVersion (release-please); a pinned digest in values.yaml freezes it and breaks the image reference (repository:@sha256:…)",
+      "matchManagers": ["helm-values"],
+      "matchPackageNames": ["pdreker/fritz_exporter"],
+      "enabled": false
+    }
+  ]
+}

@@ -40,42 +40,44 @@ NET_DEV_RAW: dict[str, Any] = {
 
 def _links(raw: object, issues: Issues | None = None) -> dict[tuple[str, str], tuple[float, float]]:
     links = parse_net_dev_response(raw, issues or Issues())
-    return {(link["mac"], link["band"]): (link["receive_bps"], link["transmit_bps"]) for link in links}
+    return {
+        (link["mac"], link["band"]): (link["receive_bps"], link["transmit_bps"]) for link in links
+    }
 
 
 class TestParseNetDev:
-    def test_reads_both_speeds_in_bit_per_second(self):
+    def test_reads_both_speeds_in_bit_per_second(self) -> None:
         links = _links(NET_DEV_RAW)
         assert links[("02:00:00:00:00:01", "5GHz")] == (300e6, 300e6)
         assert links[("02:00:00:00:00:03", "6GHz")] == (2594e6, 3629e6)
 
-    def test_decimal_comma_and_other_units(self):
+    def test_decimal_comma_and_other_units(self) -> None:
         raw = {"data": {"active": [_device("02:00:00:00:00:06", "2,4 GHz, 1,5 / 800 kbit/s")]}}
         assert _links(raw) == {("02:00:00:00:00:06", "2.4GHz"): (1.5e3, 800e3)}
 
-    def test_client_on_several_bands_has_one_entry_per_band(self):
+    def test_client_on_several_bands_has_one_entry_per_band(self) -> None:
         links = _links(NET_DEV_RAW)
         assert {band for mac, band in links if mac == "02:00:00:00:00:03"} == {"5GHz", "6GHz"}
 
-    def test_devices_without_a_wifi_link_give_nothing(self):
+    def test_devices_without_a_wifi_link_give_nothing(self) -> None:
         macs = {mac for mac, _band in _links(NET_DEV_RAW)}
         assert "02:00:00:00:00:04" not in macs  # Ethernet
         assert "02:00:00:00:00:05" not in macs  # passive
 
-    def test_mac_is_upper_case(self):
+    def test_mac_is_upper_case(self) -> None:
         raw = {"data": {"active": [_device("aa:bb:cc:dd:ee:ff", "5 GHz, 6 / 6 Mbit/s")]}}
         assert list(_links(raw)) == [("AA:BB:CC:DD:EE:FF", "5GHz")]
 
-    def test_device_listed_twice_gives_the_first_entry(self):
+    def test_device_listed_twice_gives_the_first_entry(self) -> None:
         raw = copy.deepcopy(NET_DEV_RAW)
         raw["data"]["active"].append(_device("02:00:00:00:00:01", "5 GHz, 1 / 1 Mbit/s"))
         assert _links(raw)[("02:00:00:00:00:01", "5GHz")] == (300e6, 300e6)
 
-    def test_unknown_band_is_left_out(self):
+    def test_unknown_band_is_left_out(self) -> None:
         raw = {"data": {"active": [_device("02:00:00:00:00:06", "60 GHz, 6 / 6 Mbit/s")]}}
         assert _links(raw) == {}
 
-    def test_defective_device_is_skipped_and_recorded(self):
+    def test_defective_device_is_skipped_and_recorded(self) -> None:
         raw = copy.deepcopy(NET_DEV_RAW)
         raw["data"]["active"].insert(1, {"type": "wlan", "properties": []})
         issues = Issues()
@@ -86,7 +88,7 @@ class TestParseNetDev:
         assert len(issues.messages) == 1
         assert issues.messages[0].startswith("netDev active[1] skipped")
 
-    def test_element_that_is_no_object_is_skipped_and_recorded(self):
+    def test_element_that_is_no_object_is_skipped_and_recorded(self) -> None:
         raw = copy.deepcopy(NET_DEV_RAW)
         raw["data"]["active"].append("not an object")
         issues = Issues()
@@ -95,11 +97,11 @@ class TestParseNetDev:
         assert len(issues.messages) == 1
 
     @pytest.mark.parametrize("raw", [{"pid": "netDev"}, [], {"data": "not an object"}])
-    def test_reply_of_the_wrong_shape_raises(self, raw):
+    def test_reply_of_the_wrong_shape_raises(self, raw: object) -> None:
         with pytest.raises(DataError):
             parse_net_dev_response(raw, Issues())
 
-    def test_empty_data_gives_no_links(self):
+    def test_empty_data_gives_no_links(self) -> None:
         assert parse_net_dev_response({"data": {}}, Issues()) == []
 
 
@@ -113,7 +115,9 @@ class TestWlanClientLinkSpeeds:
             name="FritzWifi",
         )
 
-    def test_exports_both_directions_per_client_and_band(self, mock_fritzconnection: MagicMock):
+    def test_exports_both_directions_per_client_and_band(
+        self, mock_fritzconnection: MagicMock
+    ) -> None:
         client = MagicMock()
         client.fetch_page.return_value = NET_DEV_RAW
 
@@ -130,8 +134,8 @@ class TestWlanClientLinkSpeeds:
         assert len(speeds) == 8
 
     def test_web_ui_error_exports_nothing_and_is_reported(
-        self, mock_fritzconnection: MagicMock, caplog
-    ):
+        self, mock_fritzconnection: MagicMock, caplog: pytest.LogCaptureFixture
+    ) -> None:
         client = MagicMock()
         client.fetch_page.side_effect = FritzWebUiError("login failed")
 

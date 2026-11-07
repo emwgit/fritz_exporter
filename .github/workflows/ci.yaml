@@ -1,0 +1,24 @@
+name: CI
+
+# Shared workflow: pdreker/github-workflows.
+
+on:
+  # Every pull request, whatever it targets; push only on main, since a branch push is
+  # already covered by its pull request.
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  ci:
+    uses: pdreker/github-workflows/.github/workflows/python-ci.yaml@112f894856e31b36acf99cc2df639234650e64e5 # v1.2.0
+    with:
+      extra-run: uv run mkdocs build --strict
+      # Full history for SonarQube Cloud (blame data).
+      fetch-depth: 0
+      sonar: true
+    secrets:
+      sonar-token: ${{ secrets.SONAR_TOKEN }}

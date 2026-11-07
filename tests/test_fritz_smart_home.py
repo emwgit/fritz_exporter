@@ -15,7 +15,7 @@ def _multimeter(current: object) -> dict:
 
 
 class TestParseSmartHomeCurrents:
-    def test_reads_the_current_by_ain_from_the_multimeter_skill_only(self):
+    def test_reads_the_current_by_ain_from_the_multimeter_skill_only(self) -> None:
         raw = {
             "data": {
                 "devices": [
@@ -32,15 +32,15 @@ class TestParseSmartHomeCurrents:
         assert currents == {"08761 0000001": 0.6345, "08761 0000003": 0.0012}
         assert issues.messages == []
 
-    def test_a_device_without_ain_or_units_is_left_out(self):
+    def test_a_device_without_ain_or_units_is_left_out(self) -> None:
         raw = {"data": {"devices": [{"units": []}, {"actorIdentificationNumber": "1"}]}}
 
         assert parse_smart_home_currents(raw, Issues()) == {}
 
-    def test_an_empty_data_object_means_no_devices(self):
+    def test_an_empty_data_object_means_no_devices(self) -> None:
         assert parse_smart_home_currents({"data": {}}, Issues()) == {}
 
-    def test_a_defective_value_skips_the_device_and_is_recorded(self):
+    def test_a_defective_value_skips_the_device_and_is_recorded(self) -> None:
         raw = {
             "data": {
                 "devices": [
@@ -57,6 +57,6 @@ class TestParseSmartHomeCurrents:
         assert len(issues.messages) == 1
 
     @pytest.mark.parametrize("raw", [{}, {"other": 1}, "login page", None])
-    def test_a_reply_without_data_raises_a_data_error(self, raw: object):
+    def test_a_reply_without_data_raises_a_data_error(self, raw: object) -> None:
         with pytest.raises(DataError):
             parse_smart_home_currents(raw, Issues())

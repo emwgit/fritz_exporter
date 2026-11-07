@@ -88,10 +88,10 @@ def _fritzos_840(raw: dict[str, Any]) -> dict[str, Any]:
 
 
 class TestFritzOs840Format:
-    def test_gives_the_same_bands_as_the_older_format(self):
+    def test_gives_the_same_bands_as_the_older_format(self) -> None:
         assert _bands(_fritzos_840(WIFI_ENVIRONMENT_RAW)) == _bands(WIFI_ENVIRONMENT_RAW)
 
-    def test_used_channels_are_the_width_in_use_not_only_the_primary_channel(self):
+    def test_used_channels_are_the_width_in_use_not_only_the_primary_channel(self) -> None:
         # Channel 4 lies in the 2.4 GHz width (4 to 8) but is not the primary channel 6.
         raw = _fritzos_840(WIFI_ENVIRONMENT_RAW)
         raw["data"]["scanlist"].append(_network("24ghz", 4))
@@ -100,7 +100,7 @@ class TestFritzOs840Format:
 
         assert (band["neighbours_same_channel"], band["neighbours_other_channels"]) == (3, 2)
 
-    def test_band_with_only_usedChannel_counts_the_primary_channel(self):
+    def test_band_with_only_used_channel_counts_the_primary_channel(self) -> None:
         raw = _fritzos_840(WIFI_ENVIRONMENT_RAW)
         del raw["data"]["24ghz"]["channels"]
         raw["data"]["scanlist"].append(_network("24ghz", 4))
@@ -109,7 +109,7 @@ class TestFritzOs840Format:
 
         assert (band["neighbours_same_channel"], band["neighbours_other_channels"]) == (2, 3)
 
-    def test_channel_without_value_skips_the_band_and_is_recorded(self):
+    def test_channel_without_value_skips_the_band_and_is_recorded(self) -> None:
         raw = _fritzos_840(WIFI_ENVIRONMENT_RAW)
         raw["data"]["5ghz"]["channels"].append({"chanRange": True})
         issues = Issues()
@@ -120,35 +120,35 @@ class TestFritzOs840Format:
         assert len(issues.messages) == 1
         assert issues.messages[0].startswith("band 5ghz skipped")
 
-    def test_airtime_flag_without_any_band_object_is_a_read_problem(self):
+    def test_airtime_flag_without_any_band_object_is_a_read_problem(self) -> None:
         raw = {"data": {"hasAirtime": True, "scanlist": []}}
 
         with pytest.raises(DataError, match="no band object"):
             parse_wifi_environment_response(raw, Issues())
 
-    def test_no_airtime_flag_without_any_band_object_gives_no_bands(self):
+    def test_no_airtime_flag_without_any_band_object_gives_no_bands(self) -> None:
         assert parse_wifi_environment_response({"data": {"hasAirtime": False}}, Issues()) == []
 
 
 class TestParseWifiEnvironment:
-    def test_airtime_is_the_mean_of_the_newest_samples_as_a_ratio(self):
+    def test_airtime_is_the_mean_of_the_newest_samples_as_a_ratio(self) -> None:
         band = _bands(WIFI_ENVIRONMENT_RAW)["2.4GHz"]
         assert band["airtime_receive"] == pytest.approx(0.20)
         assert band["airtime_transmit"] == pytest.approx(0.10)
 
-    def test_counts_networks_of_others_on_the_channel_of_the_band_and_elsewhere(self):
+    def test_counts_networks_of_others_on_the_channel_of_the_band_and_elsewhere(self) -> None:
         bands = _bands(WIFI_ENVIRONMENT_RAW)
         assert [
             (b["neighbours_same_channel"], b["neighbours_other_channels"]) for b in bands.values()
         ] == [(2, 2), (1, 1), (0, 0)]
 
-    def test_inactive_band_is_left_out(self):
+    def test_inactive_band_is_left_out(self) -> None:
         raw = copy.deepcopy(WIFI_ENVIRONMENT_RAW)
         raw["data"]["6ghz"]["active"] = False
         assert list(_bands(raw)) == ["2.4GHz", "5GHz"]
 
     @pytest.mark.parametrize("change", ["no airtime", "hasAirtime false", "empty airtime"])
-    def test_band_without_airtime_has_neighbours_only(self, change):
+    def test_band_without_airtime_has_neighbours_only(self, change: str) -> None:
         raw = copy.deepcopy(WIFI_ENVIRONMENT_RAW)
         if change == "no airtime":
             del raw["data"]["5ghz"]["airtimedata"]
@@ -164,7 +164,7 @@ class TestParseWifiEnvironment:
         assert band["neighbours_same_channel"] == 1
         assert issues.messages == []
 
-    def test_defective_sample_gives_no_airtime_and_is_recorded(self):
+    def test_defective_sample_gives_no_airtime_and_is_recorded(self) -> None:
         raw = copy.deepcopy(WIFI_ENVIRONMENT_RAW)
         raw["data"]["5ghz"]["airtimedata"] = "1792869416,1,3600,8:2,x:3"
         issues = Issues()
@@ -176,7 +176,7 @@ class TestParseWifiEnvironment:
         assert len(issues.messages) == 1
         assert "chan 5ghz airtimedata sample 1" in issues.messages[0]
 
-    def test_defective_scan_entry_is_skipped_and_recorded(self):
+    def test_defective_scan_entry_is_skipped_and_recorded(self) -> None:
         raw = copy.deepcopy(WIFI_ENVIRONMENT_RAW)
         raw["data"]["scanlist"].append({"isEnvNet": True, "channel": 6})
         issues = Issues()
@@ -188,11 +188,11 @@ class TestParseWifiEnvironment:
         assert issues.messages[0].startswith("scanlist[8] skipped")
 
     @pytest.mark.parametrize("raw", [{"pid": "chan"}, [], {"data": "not an object"}])
-    def test_reply_of_the_wrong_shape_raises(self, raw):
+    def test_reply_of_the_wrong_shape_raises(self, raw: object) -> None:
         with pytest.raises(DataError):
             parse_wifi_environment_response(raw, Issues())
 
-    def test_empty_data_gives_no_bands(self):
+    def test_empty_data_gives_no_bands(self) -> None:
         assert parse_wifi_environment_response({"data": {}}, Issues()) == []
 
 
@@ -206,7 +206,7 @@ class TestWlanEnvironment:
             name="FritzWifi",
         )
 
-    def test_exports_airtime_and_neighbours_per_band(self, mock_fritzconnection: MagicMock):
+    def test_exports_airtime_and_neighbours_per_band(self, mock_fritzconnection: MagicMock) -> None:
         client = MagicMock()
         client.fetch_page.return_value = WIFI_ENVIRONMENT_RAW
 
@@ -228,8 +228,8 @@ class TestWlanEnvironment:
         assert len(neighbours) == 6
 
     def test_web_ui_error_exports_nothing_and_is_reported(
-        self, mock_fritzconnection: MagicMock, caplog
-    ):
+        self, mock_fritzconnection: MagicMock, caplog: pytest.LogCaptureFixture
+    ) -> None:
         client = MagicMock()
         client.fetch_page.side_effect = FritzWebUiError("login failed")
 
@@ -241,7 +241,7 @@ class TestWlanEnvironment:
 
     def test_airtime_without_any_band_object_is_reported_as_a_read_problem(
         self, mock_fritzconnection: MagicMock
-    ):
+    ) -> None:
         client = MagicMock()
         client.fetch_page.return_value = {"data": {"hasAirtime": True, "scanlist": []}}
 

@@ -36,7 +36,7 @@ class TestWifiNames:
     @pytest.mark.parametrize("third_band", [None, "2400"])
     def test_third_wlan_is_the_guest_network_without_a_6_ghz_radio(
         self, mock_fritzconnection: MagicMock, third_band: str | None
-    ):
+    ) -> None:
         assert _band_names(mock_fritzconnection, 3, third_band) == {
             "1": "2.4GHz",
             "2": "5GHz",
@@ -45,7 +45,7 @@ class TestWifiNames:
 
     def test_third_wlan_is_6_ghz_and_the_fourth_the_guest_network_on_a_tri_band_box(
         self, mock_fritzconnection: MagicMock
-    ):
+    ) -> None:
         assert _band_names(mock_fritzconnection, 4, "6000") == {
             "1": "2.4GHz",
             "2": "5GHz",
@@ -53,5 +53,7 @@ class TestWifiNames:
             "4": "Guest",
         }
 
-    def test_fourth_wlan_keeps_its_name_without_a_6_ghz_radio(self, mock_fritzconnection: MagicMock):
+    def test_fourth_wlan_keeps_its_name_without_a_6_ghz_radio(
+        self, mock_fritzconnection: MagicMock
+    ) -> None:
         assert _band_names(mock_fritzconnection, 4, None)["4"] == "WLAN4"

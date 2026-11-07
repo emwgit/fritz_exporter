@@ -15,6 +15,34 @@
 
 * add AGENTS.md with project conventions and architecture guide ([#576](https://github.com/pdreker/fritz_exporter/issues/576)) ([53f3742](https://github.com/pdreker/fritz_exporter/commit/53f37424c42039d62b9e72dd3a3e10e9b82f1036))
 
+## [4.0.3](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v4.0.2...fritzexporter-v4.0.3) (2026-11-05)
+
+
+### Bug Fixes
+
+* **helm:** image follows the chart appVersion again ([#803](https://github.com/pdreker/fritz_exporter/issues/803)) ([aa1fd28](https://github.com/pdreker/fritz_exporter/commit/aa1fd281659cdee41ecedfede94d3c46b18926e2))
+
+## [4.0.2](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v4.0.1...fritzexporter-v4.0.2) (2026-11-05)
+
+
+### Documentation
+
+* build with MkDocs and publish to GitHub Pages as well ([#799](https://github.com/pdreker/fritz_exporter/issues/799)) ([50ee4e4](https://github.com/pdreker/fritz_exporter/commit/50ee4e445993cef39faca51a1e68f00aef98e948))
+* link to the docs on GitHub Pages ([#802](https://github.com/pdreker/fritz_exporter/issues/802)) ([423cac6](https://github.com/pdreker/fritz_exporter/commit/423cac69bf9a0667afb5d45104ae8764d33b662f))
+
+## [4.0.1](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v4.0.0...fritzexporter-v4.0.1) (2026-10-31)
+
+
+### Bug Fixes
+
+* exit cleanly on SIGTERM ([#790](https://github.com/pdreker/fritz_exporter/issues/790)) ([00b2b3e](https://github.com/pdreker/fritz_exporter/commit/00b2b3e1079e08024736c64bead03eb2ac0add64))
+* **grafana:** Home power as stacked bands with a total line ([#781](https://github.com/pdreker/fritz_exporter/issues/781)) ([51cde2f](https://github.com/pdreker/fritz_exporter/commit/51cde2fb924c09320b047d3fed665c1a8fd43f06))
+
+
+### Documentation
+
+* point to fritz_logextractor for the event log ([#789](https://github.com/pdreker/fritz_exporter/issues/789)) ([99721fd](https://github.com/pdreker/fritz_exporter/commit/99721fd8b4ff196f9100a659efcae07f5f44cf37))
+
 ## [4.0.0](https://github.com/pdreker/fritz_exporter/compare/fritzexporter-v3.5.1...fritzexporter-v4.0.0) (2026-10-24)
 
 

@@ -1,6 +1,7 @@
 """Tests for the fibre level fallback (fritz_fiber.py)."""
 
 import logging
+from typing import Any
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -14,24 +15,41 @@ from .collect import collect_device, fake_device, services
 
 
 class TestParseFiberStats:
-    def test_newest_entry_of_each_series_in_dbm(self):
+    def test_newest_entry_of_each_series_in_dbm(self) -> None:
         raw = {"data": {"opt_ds": [["sa", 9, -65], ["sa", 8, -66]], "opt_us": [["sa", 9, -54]]}}
-        assert parse_fiber_stats_response(raw, Issues()) == {"receive_dbm": -6.5, "transmit_dbm": -5.4}
+        assert parse_fiber_stats_response(raw, Issues()) == {
+            "receive_dbm": -6.5,
+            "transmit_dbm": -5.4,
+        }
 
-    def test_missing_series_give_none(self):
-        assert parse_fiber_stats_response({"data": []}, Issues()) == {"receive_dbm": None, "transmit_dbm": None}
+    def test_missing_series_give_none(self) -> None:
+        assert parse_fiber_stats_response({"data": []}, Issues()) == {
+            "receive_dbm": None,
+            "transmit_dbm": None,
+        }
         raw = {"data": {"opt_ds": [], "opt_us": [["sa", 9, ""]]}}
-        assert parse_fiber_stats_response(raw, Issues()) == {"receive_dbm": None, "transmit_dbm": None}
+        assert parse_fiber_stats_response(raw, Issues()) == {
+            "receive_dbm": None,
+            "transmit_dbm": None,
+        }
 
     @pytest.mark.parametrize(
         ("raw", "message"),
         [
-            ({"data": {"opt_us": [["sa", 9, "n/a"]]}}, "fiberStats opt_us[0] value: expected a number"),
-            ({"data": {"opt_us": [["sa", 9]]}}, "fiberStats opt_us[0]: expected [weekday, hour, value]"),
+            (
+                {"data": {"opt_us": [["sa", 9, "n/a"]]}},
+                "fiberStats opt_us[0] value: expected a number",
+            ),
+            (
+                {"data": {"opt_us": [["sa", 9]]}},
+                "fiberStats opt_us[0]: expected [weekday, hour, value]",
+            ),
             ({"data": {"opt_us": "not a list"}}, "fiberStats data opt_us: expected a list"),
         ],
     )
-    def test_defective_series_gives_none_and_is_recorded(self, raw, message):
+    def test_defective_series_gives_none_and_is_recorded(
+        self, raw: dict[str, Any], message: str
+    ) -> None:
         raw["data"]["opt_ds"] = [["sa", 9, -65]]
         issues = Issues()
 
@@ -41,7 +59,7 @@ class TestParseFiberStats:
         assert [m.split(", got")[0] for m in issues.messages] == [message]
 
     @pytest.mark.parametrize("raw", [{"data": "not an object"}, []])
-    def test_reply_of_the_wrong_shape_raises(self, raw):
+    def test_reply_of_the_wrong_shape_raises(self, raw: dict[str, Any] | list[Any]) -> None:
         issues = Issues()
         with pytest.raises(DataError):
             parse_fiber_stats_response(raw, issues)
@@ -91,7 +109,7 @@ class TestWanFiberWebUiFallback:
             "threshold samples": len(by_name["fritz_fiber_optical_threshold_dBm"].samples),
         }
 
-    def test_zero_from_tr064_uses_web_ui_levels(self, mock_fritzconnection: MagicMock):
+    def test_zero_from_tr064_uses_web_ui_levels(self, mock_fritzconnection: MagicMock) -> None:
         client = MagicMock()
         client.fetch_page.return_value = FIBER_RAW
         levels = self._collect(mock_fritzconnection, tr064_levels=(0, 0), webui_client=client)
@@ -102,7 +120,7 @@ class TestWanFiberWebUiFallback:
         }
         client.fetch_page.assert_called_once_with("fiberStats")
 
-    def test_non_zero_tr064_does_not_call_web_ui(self, mock_fritzconnection: MagicMock):
+    def test_non_zero_tr064_does_not_call_web_ui(self, mock_fritzconnection: MagicMock) -> None:
         client = MagicMock()
         client.fetch_page.return_value = FIBER_RAW
         levels = self._collect(
@@ -116,8 +134,8 @@ class TestWanFiberWebUiFallback:
         client.fetch_page.assert_not_called()
 
     def test_web_ui_error_exports_no_level_and_reports_it(
-        self, mock_fritzconnection: MagicMock, caplog
-    ):
+        self, mock_fritzconnection: MagicMock, caplog: pytest.LogCaptureFixture
+    ) -> None:
         # 0 from TR-064 means unknown here, not 0 dBm; the other fibre metrics stay.
         client = MagicMock()
         client.fetch_page.side_effect = FritzWebUiError("login failed")
@@ -130,27 +148,32 @@ class TestWanFiberWebUiFallback:
         ) in caplog.text
 
     def test_web_ui_failure_is_not_logged_on_every_scrape(
-        self, mock_fritzconnection: MagicMock, caplog
-    ):
+        self, mock_fritzconnection: MagicMock, caplog: pytest.LogCaptureFixture
+    ) -> None:
         client = MagicMock()
         client.fetch_page.side_effect = FritzWebUiError("login failed")
         with caplog.at_level(logging.WARNING):
             self._collect(mock_fritzconnection, tr064_levels=(0, 0), webui_client=client, scrapes=3)
         assert caplog.text.count("optical levels from the web interface skipped") == 1
 
-    def test_malformed_web_ui_data_exports_no_level(self, mock_fritzconnection: MagicMock, caplog):
+    def test_malformed_web_ui_data_exports_no_level(
+        self, mock_fritzconnection: MagicMock, caplog: pytest.LogCaptureFixture
+    ) -> None:
         client = MagicMock()
         client.fetch_page.return_value = {"data": {"opt_ds": [["sa", 9, "n/a"]]}}
         with caplog.at_level(logging.WARNING):
             levels = self._collect(mock_fritzconnection, tr064_levels=(0, 0), webui_client=client)
         assert levels["receive"] is None
-        assert "Skipped part of the WanFiberInterfaceConfig data from FritzFiber (somehost): " in caplog.text
+        assert (
+            "Skipped part of the WanFiberInterfaceConfig data from FritzFiber (somehost): "
+            in caplog.text
+        )
         assert "fiberStats opt_ds[0] value: expected a number, got str" in caplog.text
 
     @patch("fritzexporter.fritzdevice.FritzWebUiClient")
     def test_fiber_alone_creates_web_ui_client(
         self, mock_webui_client: MagicMock, mock_fritzconnection: MagicMock
-    ):
+    ) -> None:
         # No other web-UI capability is present here, so the device must
         # create the client for the fibre fallback during normal initialisation.
         device = fake_device(
@@ -177,11 +200,17 @@ FIBRE_SERVICES = {"X_AVM-DE_WANFiber1": ["GetInfo", "GetInfoGPON", "GetStatistic
 
 
 def _access_type(access_type: str) -> dict:
-    return {("WANCommonInterfaceConfig1", "GetCommonLinkProperties"): {"NewWANAccessType": access_type}}
+    return {
+        ("WANCommonInterfaceConfig1", "GetCommonLinkProperties"): {"NewWANAccessType": access_type}
+    }
 
 
 def _fibre_calls(mock_fritzconnection: MagicMock) -> list:
-    return [c for c in mock_fritzconnection.return_value.call_action.call_args_list if c.args[0] == "X_AVM-DE_WANFiber1"]
+    return [
+        c
+        for c in mock_fritzconnection.return_value.call_action.call_args_list
+        if c.args[0] == "X_AVM-DE_WANFiber1"
+    ]
 
 
 @patch("fritzexporter.tr064_remote.FritzConnection")
@@ -191,7 +220,7 @@ class TestFibreCapabilitiesFollowTheAccessType:
     @pytest.mark.parametrize("access_type", ["DSL", "Cable", "X_AVM-DE_Cable"])
     def test_not_offered_on_another_access_type_and_never_called(
         self, mock_fritzconnection: MagicMock, access_type: str
-    ):
+    ) -> None:
         device = fake_device(
             mock_fritzconnection,
             services("DeviceInfo", **FIBRE_SERVICES),
@@ -201,7 +230,7 @@ class TestFibreCapabilitiesFollowTheAccessType:
         assert not any(device.capabilities[name].present for name in FIBRE_NAMES)
         assert _fibre_calls(mock_fritzconnection) == []
 
-    def test_offered_on_a_fibre_line(self, mock_fritzconnection: MagicMock):
+    def test_offered_on_a_fibre_line(self, mock_fritzconnection: MagicMock) -> None:
         device = fake_device(
             mock_fritzconnection,
             services("DeviceInfo", **FIBRE_SERVICES),
@@ -210,7 +239,9 @@ class TestFibreCapabilitiesFollowTheAccessType:
 
         assert all(device.capabilities[name].present for name in FIBRE_NAMES)
 
-    def test_offered_if_the_access_type_cannot_be_read(self, mock_fritzconnection: MagicMock):
+    def test_offered_if_the_access_type_cannot_be_read(
+        self, mock_fritzconnection: MagicMock
+    ) -> None:
         def unreadable(**_: object) -> dict:
             raise FritzInternalError
 

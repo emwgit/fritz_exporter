@@ -48,14 +48,14 @@ def _throughput(raw: object, issues: Issues | None = None) -> dict[tuple[str, st
 
 
 class TestParseWanQos:
-    def test_mean_of_the_samples_is_converted_from_bytes_to_bits(self):
+    def test_mean_of_the_samples_is_converted_from_bytes_to_bits(self) -> None:
         throughput = _throughput(WAN_QOS_RAW)
         assert throughput[("tx", "realtime")] == pytest.approx(200 * 8)
         assert throughput[("tx", "default")] == pytest.approx(2000 * 8)
         assert throughput[("rx", "internet")] == pytest.approx(5000 * 8)
         assert throughput[("rx", "multicast")] == pytest.approx(2000 * 8)
 
-    def test_every_class_of_the_page_is_exported(self):
+    def test_every_class_of_the_page_is_exported(self) -> None:
         assert sorted(_throughput(WAN_QOS_RAW)) == [
             ("rx", "internet"),
             ("rx", "multicast"),
@@ -65,18 +65,20 @@ class TestParseWanQos:
             ("tx", "realtime"),
         ]
 
-    def test_link_is_the_name_of_the_sync_group_without_its_prefix(self):
-        links = {entry["link"] for entry in parse_wan_qos_response(WAN_QOS_RAW, Issues())["classes"]}
+    def test_link_is_the_name_of_the_sync_group_without_its_prefix(self) -> None:
+        links = {
+            entry["link"] for entry in parse_wan_qos_response(WAN_QOS_RAW, Issues())["classes"]
+        }
         assert links == {"dsl"}
 
-    def test_guest_network_is_apart_from_the_classes(self):
+    def test_guest_network_is_apart_from_the_classes(self) -> None:
         guests = parse_wan_qos_response(WAN_QOS_RAW, Issues())["guests"]
         assert {(g["direction"], g["bits_per_second"]) for g in guests} == {
             ("tx", 50 * 8),
             ("rx", 20 * 8),
         }
 
-    def test_every_sync_group_is_exported(self):
+    def test_every_sync_group_is_exported(self) -> None:
         raw = copy.deepcopy(WAN_QOS_RAW)
         raw["data"]["sync_groups"].append(
             copy.deepcopy(raw["data"]["sync_groups"][0]) | {"name": "sync_lte"}
@@ -85,7 +87,7 @@ class TestParseWanQos:
         assert links == {"dsl", "lte"}
 
     @pytest.mark.parametrize("change", ["absent", "empty"])
-    def test_class_without_samples_is_left_out(self, change):
+    def test_class_without_samples_is_left_out(self, change: str) -> None:
         raw = copy.deepcopy(WAN_QOS_RAW)
         group = raw["data"]["sync_groups"][0]
         if change == "absent":
@@ -100,7 +102,7 @@ class TestParseWanQos:
         assert ("rx", "internet") in throughput
         assert issues.messages == []
 
-    def test_defective_sample_skips_the_class_and_is_recorded(self):
+    def test_defective_sample_skips_the_class_and_is_recorded(self) -> None:
         raw = copy.deepcopy(WAN_QOS_RAW)
         raw["data"]["sync_groups"][0]["us_default_bps_curr"] = [1000, "x"]
         issues = Issues()
@@ -112,7 +114,7 @@ class TestParseWanQos:
         assert len(issues.messages) == 1
         assert "netMoni sync_groups[0] us_default_bps_curr skipped" in issues.messages[0]
 
-    def test_group_without_a_name_is_skipped_and_recorded(self):
+    def test_group_without_a_name_is_skipped_and_recorded(self) -> None:
         raw = copy.deepcopy(WAN_QOS_RAW)
         del raw["data"]["sync_groups"][0]["name"]
         issues = Issues()
@@ -122,11 +124,11 @@ class TestParseWanQos:
         assert issues.messages[0].startswith("netMoni sync_groups[0] skipped")
 
     @pytest.mark.parametrize("raw", [{"pid": "netMoni"}, [], {"data": "not an object"}])
-    def test_reply_of_the_wrong_shape_raises(self, raw):
+    def test_reply_of_the_wrong_shape_raises(self, raw: object) -> None:
         with pytest.raises(DataError):
             parse_wan_qos_response(raw, Issues())
 
-    def test_empty_data_gives_nothing(self):
+    def test_empty_data_gives_nothing(self) -> None:
         assert parse_wan_qos_response({"data": {}}, Issues()) == {"classes": [], "guests": []}
 
 
@@ -140,7 +142,7 @@ class TestWanQosThroughput:
             name="FritzWan",
         )
 
-    def test_exports_the_throughput_per_class(self, mock_fritzconnection: MagicMock):
+    def test_exports_the_throughput_per_class(self, mock_fritzconnection: MagicMock) -> None:
         client = MagicMock()
         client.fetch_page.return_value = WAN_QOS_RAW
 
@@ -161,8 +163,8 @@ class TestWanQosThroughput:
         assert guest == {("dsl", "tx"): pytest.approx(400), ("dsl", "rx"): pytest.approx(160)}
 
     def test_web_ui_error_exports_nothing_and_is_reported(
-        self, mock_fritzconnection: MagicMock, caplog
-    ):
+        self, mock_fritzconnection: MagicMock, caplog: pytest.LogCaptureFixture
+    ) -> None:
         client = MagicMock()
         client.fetch_page.side_effect = FritzWebUiError("login failed")
 
